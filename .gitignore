@@ -1,0 +1,49 @@
+# Binaries
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+*.out
+
+# Go workspace
+go.work
+go.work.sum
+
+# Environment
+.env
+.env.local
+*.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Build artifacts
+dist/
+node_modules/
+
+# Local data
+data/
+*.db
+*.sqlite
+
+# Generated ent code (will be regenerated)
+# Uncomment if you want to commit generated code
+# ent/*.go
+# !ent/generate.go
+# !ent/migrate/migrations.go
