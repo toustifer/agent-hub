@@ -54,20 +54,22 @@ subject, err := authService.ValidateToken(ctx, token)
 - `APIKeyService.ValidateKey(key) → (User, error)`
 - `UserService.GetUser(id) → (User, error)`
 
-## 5 个核心表
+## 5 个核心表（多租户）
 
-### hub_businesses — 业务注册表
+### hub_businesses — 业务租户表
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | id | bigserial | 主键 |
-| code | varchar(64) unique | 业务代号（siruoning） |
-| name | varchar(128) | 业务名 |
+| code | varchar(64) unique | 租户代号（siruoning） |
+| name | varchar(128) | 租户名 |
 | repo_url | text | 仓库 URL |
-| owner_user_id | bigint | 关联 sub2api user.id |
+| owner_user_id | bigint | 关联 sub2api user.id（business-admin） |
 | description | text | 业务说明 |
-| status | varchar(20) | active / suspended |
+| status | varchar(20) | active / suspended / pending（白名单审核） |
 | created_at | timestamptz | |
 | updated_at | timestamptz | |
+
+**白名单逻辑**：仅有 super-admin（role=admin 的 sub2api 用户）能创建 business；新 business 默认 `status=pending`，super-admin 审核通过改 `active`。
 
 ### hub_workers — Worker 心跳
 | 字段 | 类型 | 说明 |

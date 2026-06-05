@@ -1,0 +1,195 @@
+{
+  "sessionId": "agent-hub-init",
+  "goal": "agent-company 多租户管理平台 POC（白名单模式）",
+  "createdAt": "2026-06-05T14:00:00+08:00",
+  "status": "active",
+  "scope": "agent-hub 项目本身：用 agent-company 模式开发 agent-hub",
+  "designDecisions": [
+    "白名单模式：仅 super-admin 可创建 business",
+    "Go 1.26.1 + ent 0.14 + gin + pgx5",
+    "共享 sub2api PostgreSQL，hub schema 隔离",
+    "5 个核心表：business/worker/lock/playbook/event",
+    "锁用 partial unique index（非 advisory lock）",
+    "playbook 全文搜索用 PostgreSQL tsvector + GIN",
+    "sub2api 0 修改，通过 go.mod replace 复用",
+    "hub 自带 TimeMixin / SoftDeleteMixin（不 import sub2api 内部包）"
+  ],
+  "workers": [
+    {
+      "id": "worker-go-infra",
+      "title": "Go 基础设施",
+      "scope": "main.go / config / logger / server / db pool / ent client",
+      "domain": false,
+      "target": "backend",
+      "owner": "stifer",
+      "files": [
+        "cmd/hub/main.go",
+        "internal/config/",
+        "internal/server/"
+      ],
+      "status": "active",
+      "currentTask": "T-1.1 完善 main.go 启动流程",
+      "history": [
+        {
+          "taskId": "T-0.1",
+          "title": "项目骨架",
+          "description": "建仓、目录、go.mod、README、文档",
+          "completedAt": "2026-06-05T13:30:00+08:00"
+        }
+      ]
+    },
+    {
+      "id": "worker-go-domain",
+      "title": "Go 业务逻辑层",
+      "scope": "5 个 service + ent 客户端集成 + repository 模式",
+      "domain": true,
+      "target": "backend",
+      "owner": "stifer",
+      "files": [
+        "internal/hub/service/",
+        "internal/hub/repository/"
+      ],
+      "status": "idle",
+      "currentTask": "T-2.1 HubBusinessService",
+      "history": []
+    },
+    {
+      "id": "worker-go-http",
+      "title": "Go HTTP 层",
+      "scope": "5 个 handler + JWT/APIKey middleware + router",
+      "domain": true,
+      "target": "backend",
+      "owner": "stifer",
+      "files": [
+        "internal/hub/handler/",
+        "internal/hub/router.go",
+        "internal/middleware/"
+      ],
+      "status": "idle",
+      "currentTask": "T-3.1 5 个 handler skeleton",
+      "history": []
+    },
+    {
+      "id": "worker-go-deploy",
+      "title": "Go 部署",
+      "scope": "systemd unit + nginx config + cloudflared tunnel + 部署脚本",
+      "domain": false,
+      "target": "ops",
+      "owner": "stifer",
+      "files": [
+        "deploy/",
+        "scripts/"
+      ],
+      "status": "idle",
+      "currentTask": "T-6.1 systemd unit",
+      "history": []
+    },
+    {
+      "id": "worker-frontend",
+      "title": "Vue 3 Dashboard",
+      "scope": "Vite + Vue 3 + TS + Element Plus + 7 个页面 + API 客户端",
+      "domain": true,
+      "target": "frontend",
+      "owner": "stifer",
+      "files": [
+        "frontend/"
+      ],
+      "status": "idle",
+      "currentTask": "T-4.1 Vite 项目初始化",
+      "history": []
+    },
+    {
+      "id": "worker-sdk",
+      "title": "客户端 SDK",
+      "scope": "hub-client.js (Node.js) + hub-client.py (Python) + 集成示例",
+      "domain": false,
+      "target": "sdk",
+      "owner": "stifer",
+      "files": [
+        "sdk/"
+      ],
+      "status": "idle",
+      "currentTask": "T-5.1 hub-client.js",
+      "history": []
+    },
+    {
+      "id": "worker-database",
+      "title": "数据库迁移与审计",
+      "scope": "5 张表 migration 验证 + 索引审计 + 文档",
+      "domain": false,
+      "target": "database",
+      "owner": "stifer",
+      "files": [
+        "migrations/",
+        "internal/hub/repository/migrations/"
+      ],
+      "status": "idle",
+      "currentTask": "T-1.X migration 审计",
+      "history": [
+        {
+          "taskId": "T-1.0",
+          "title": "5 张表 migration 编写",
+          "description": "0001/0002/0003 三个 SQL",
+          "completedAt": "2026-06-05T14:25:00+08:00"
+        }
+      ]
+    }
+  ],
+  "dag": [
+    {
+      "taskId": "T-0.1",
+      "title": "项目骨架 + 文档",
+      "status": "completed",
+      "completedAt": "2026-06-05T13:30:00+08:00"
+    },
+    {
+      "taskId": "T-1.0",
+      "title": "5 ent schemas + 3 migrations",
+      "status": "completed",
+      "completedAt": "2026-06-05T14:25:00+08:00",
+      "owner": "worker-database"
+    },
+    {
+      "taskId": "T-2",
+      "title": "Phase 2: 5 个 service 层",
+      "status": "in_progress",
+      "dependsOn": ["T-1.0"],
+      "owner": "worker-go-domain"
+    },
+    {
+      "taskId": "T-3",
+      "title": "Phase 3: HTTP 层（handlers + router + middleware）",
+      "status": "pending",
+      "dependsOn": ["T-2"],
+      "owner": "worker-go-http"
+    },
+    {
+      "taskId": "T-4",
+      "title": "Phase 4: Vue 3 Dashboard",
+      "status": "pending",
+      "dependsOn": ["T-2"],
+      "owner": "worker-frontend"
+    },
+    {
+      "taskId": "T-5",
+      "title": "Phase 5: hub-client SDK",
+      "status": "pending",
+      "dependsOn": ["T-3"],
+      "owner": "worker-sdk"
+    },
+    {
+      "taskId": "T-6",
+      "title": "Phase 6: 部署到 47.115.134.24",
+      "status": "pending",
+      "dependsOn": ["T-3"],
+      "owner": "worker-go-deploy"
+    },
+    {
+      "taskId": "T-7",
+      "title": "Phase 7: 跨业务接通 + 文档",
+      "status": "pending",
+      "dependsOn": ["T-5", "T-6"],
+      "owner": "stifer"
+    }
+  ]
+}

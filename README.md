@@ -1,17 +1,35 @@
 # agent-hub
 
-> 多业务代码协作协调层 — 让多个 AI 管理的业务域在同一台服务器上互不打架
+> **agent-company 多租户管理平台** — 让每个团队 / 每个人跑自己的 agent-company，又能跨租户共享知识
 
 ## 它是什么
 
-一个独立的 Go 服务，作为 sub2api v0.1.104 之上的**业务协调模块**存在。
+一个独立的 Go 服务，作为 sub2api v0.1.104 之上的 **agent-company 协调层**。
 
-提供 4 个核心能力：
+任何团队 / 任何 agent-company 部署都可以**通过邀请**注册到 hub 上，把自己的：
+- 业务 / 仓库
+- AI Worker 列表
+- 跨业务锁（关键资源互斥）
+- Playbook（决策 / 模式 / 踩坑）
 
-1. **业务注册表** — 哪些业务（siruoning / insight-tutor / portal）接入 hub
+托管到这个中心平台上，跨租户共享知识 + 单租户内协调。
+
+**白名单模式**：仅 super-admin（stifer）能创建 business，其他人都是受邀加入。
+
+## 4 个核心能力
+
+1. **业务注册表** — 哪些 agent-company 部署接入 hub（白名单审核）
 2. **Worker 心跳** — 哪个 AI 正在跑、跑什么任务、什么时候离线
 3. **分布式锁** — 跨业务 / 跨 Worker 抢占同一资源（文件 / 业务域）时互斥
-4. **Playbook 知识库** — 跨业务沉淀架构决策、踩坑、模式
+4. **Playbook 知识库** — 跨租户共享架构决策、踩坑、模式
+
+## 用户角色
+
+| 角色 | 谁能 | 看到什么 |
+|---|---|---|
+| super-admin | 创建 business / 邀请 business-admin | 全部 businesses / 全局锁 / 跨租户 playbook |
+| business-admin | 管自己的 workers / 锁 / playbook | 自己 business 的所有数据 |
+| worker (apikey) | heartbeat / acquire lock / upload playbook | 自己 business 的受限操作 |
 
 ## 它不是
 
@@ -19,6 +37,7 @@
 - 不是 Claude Code 的替代品
 - 不是 git 的替代品
 - 不是产品 CLI（不做 Telegram / Discord 网关）
+- 不是公开平台（白名单，不开放注册）
 
 ## 架构
 
