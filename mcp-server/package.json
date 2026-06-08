@@ -1,0 +1,10 @@
+{
+  "name": "agent-hub-mcp",
+  "version": "1.0.0",
+  "description": "MCP Server for agent-hub — Worker heartbeat, distributed lock, event logging",
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}

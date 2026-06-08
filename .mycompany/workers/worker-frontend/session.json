@@ -1,0 +1,37 @@
+[
+  {
+    "taskId": "T-4",
+    "title": "Vue 3 Dashboard 前端",
+    "status": "completed",
+    "startedAt": "2026-06-05T10:00:00+08:00",
+    "completedAt": "2026-06-05T10:30:00+08:00",
+    "filesCreated": [
+      "frontend/package.json",
+      "frontend/vite.config.ts",
+      "frontend/index.html",
+      "frontend/src/main.ts",
+      "frontend/src/App.vue",
+      "frontend/src/env.d.ts",
+      "frontend/src/types/hub.ts",
+      "frontend/src/api/hub.ts",
+      "frontend/src/stores/auth.ts",
+      "frontend/src/stores/app.ts",
+      "frontend/src/router/index.ts",
+      "frontend/src/layouts/MainLayout.vue",
+      "frontend/src/views/Login.vue",
+      "frontend/src/views/Dashboard.vue",
+      "frontend/src/views/BusinessList.vue",
+      "frontend/src/views/WorkerList.vue",
+      "frontend/src/views/LockList.vue",
+      "frontend/src/views/PlaybookSearch.vue",
+      "frontend/src/views/EventStream.vue"
+    ],
+    "summary": "创建了完整的 Vue 3 Dashboard 前端项目，包含 19 个文件。技术栈：Vite + Vue 3 + TypeScript + Element Plus + Pinia + Axios。实现了 7 个页面（Login、Dashboard、Businesses、Workers、Locks、Playbooks、Events），含路由守卫、JWT 认证、SSE 事件流。MainLayout 使用 slot 模式，Login 为独立页面。",
+    "acceptanceCriteria": [
+      { "criteria": "ALL 19 files created", "met": true },
+      { "criteria": "Each page component wraps content in <MainLayout>", "met": true },
+      { "criteria": "Login is standalone (no layout)", "met": true },
+      { "criteria": "Route guard redirects /login when authenticated", "met": true }
+    ]
+  }
+]

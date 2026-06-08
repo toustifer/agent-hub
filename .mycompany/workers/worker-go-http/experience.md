@@ -28,3 +28,29 @@
    - `/v1/hub/workers/heartbeat` 等 worker 端用 APIKey middleware
 4. **错误返回**：统一 `{code, message}` JSON
 5. **CORS** 配置从 .env 读取
+
+## T-3 完成后经验
+
+### 模式：handler 结构
+
+- 每个 handler 文件对应一个 service 领域（business/worker/lock/playbook/event）
+- 请求体使用私有 struct（如 `createBusinessReq`），通过 `c.ShouldBindJSON` 绑定
+- 响应统一 `gin.H{"data": ...}` 或 `gin.H{"code": N, "message": "..."}`
+- 列表/搜索接口统一 `limit`/`offset` 分页参数，默认 20
+- 路径参数用 `c.Param()`，查询参数用 `c.Query()`
+
+### 模式：LockHeldError 处理
+
+- Service 层定义 `LockHeldError` struct，包含 `HolderWorkerID`
+- Handler 层用 `errors.As(err, &held)` 判断，返回 HTTP 409
+- 额外返回 `data.holder_worker_id` 供客户端使用
+
+### 模式：SSE 流式事件
+
+- 设置 `Content-Type: text/event-stream` + `Cache-Control: no-cache` + `Connection: keep-alive`
+- 先 `WriteHeader(200)` 再进入循环
+- 使用 `gin.Flusher` cast `c.Writer`，每次 `fmt.Fprintf` 后 `Flush()`
+
+### 踩坑
+
+1. **go.sum 缺失**：首次创建文件后无法编译，需 `go mod tidy` 下载依赖。但网络受限时无法解决，代码本身语法正确（import 与 go.mod 对齐）

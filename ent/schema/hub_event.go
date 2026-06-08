@@ -10,52 +10,35 @@ import (
 	"entgo.io/ent/schema/index"
 )
 
-// HubEvent is an append-only audit log entry.
-//
-// Events are NEVER deleted; the data is for debugging, auditing, and SSE streaming.
 type HubEvent struct {
 	ent.Schema
 }
 
 func (HubEvent) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		entsql.Annotation{
-			Table: "hub_events",
-			Schema: "hub",
-		},
+		entsql.Annotation{Table: "hub_events", Schema: "hub"},
 	}
 }
 
 func (HubEvent) Mixin() []ent.Mixin {
-	return []ent.Mixin{
-		TimeMixin{},
-	}
+	return []ent.Mixin{TimeMixin{}}
 }
 
 func (HubEvent) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("actor").
-			MaxLen(128).
-			NotEmpty().
-			Comment("谁触发（worker_id 或 user_email）"),
-		field.String("event_type").
-			MaxLen(64).
-			NotEmpty().
-			Comment("lock.acquired / lock.released / heartbeat.missed / business.registered ..."),
+		field.Int64("business_id"),
+		field.String("actor").MaxLen(128).NotEmpty(),
+		field.String("event_type").MaxLen(64).NotEmpty(),
 		field.JSON("payload", map[string]interface{}{}).
 			Optional().
-			SchemaType(map[string]string{
-				dialect.Postgres: "jsonb",
-			}),
+			SchemaType(map[string]string{dialect.Postgres: "jsonb"}),
 	}
 }
 
 func (HubEvent) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("business", HubBusiness.Type).
-			Ref("events").
-			Unique().
-			Required(),
+			Ref("events").Field("business_id").Unique().Required(),
 	}
 }
 
@@ -63,5 +46,6 @@ func (HubEvent) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("event_type"),
 		index.Fields("created_at"),
+		index.Fields("business_id", "created_at"),
 	}
 }

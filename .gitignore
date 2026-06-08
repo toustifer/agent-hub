@@ -47,3 +47,4 @@ data/
 # ent/*.go
 # !ent/generate.go
 # !ent/migrate/migrations.go
+.mcp.json

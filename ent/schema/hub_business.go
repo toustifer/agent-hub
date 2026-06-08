@@ -4,6 +4,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 )
@@ -58,6 +59,15 @@ func (HubBusiness) Fields() []ent.Field {
 			MaxLen(20).
 			Default("active").
 			Comment("active / suspended / archived"),
+	}
+}
+
+func (HubBusiness) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.To("workers", HubWorker.Type),
+		edge.To("locks", HubLock.Type),
+		edge.To("playbooks", HubPlaybook.Type),
+		edge.To("events", HubEvent.Type),
 	}
 }
 

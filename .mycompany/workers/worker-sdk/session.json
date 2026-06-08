@@ -1,0 +1,23 @@
+[
+  {
+    "taskId": "T-5",
+    "title": "hub-client SDK（Node.js + Python）",
+    "status": "completed",
+    "startedAt": "2026-06-05T14:45:00+08:00",
+    "completedAt": "2026-06-05T15:10:00+08:00",
+    "filesCreated": [
+      "sdk/hub-client.js",
+      "sdk/hub_client.py",
+      "sdk/README.md"
+    ],
+    "summary": "创建 agent-hub 多语言客户端 SDK。Node.js 版（hub-client.js, 296 行）纯 CommonJS 零依赖，Python 版（hub_client.py, 312 行）纯标准库兼容 3.8+。两个 SDK 均支持 JWT token 和 APIKey 双认证方式，覆盖所有 worker 端方法：heartbeat、acquireLock/renewLock/releaseLock、createPlaybook/searchPlaybooks/getPlaybook、appendEvent、getBusinessByCode。Python SDK 包含 HubLockError 异常类（含 resource_key、holder_worker_id 属性）用于捕获 409 锁冲突。README.md（164 行）含两种语言的完整使用示例和 API 参考表。",
+    "acceptanceCriteria": [
+      { "criteria": "sdk/hub-client.js 存在，纯 Node.js 无依赖", "met": true },
+      { "criteria": "sdk/hub_client.py 存在，纯标准库", "met": true },
+      { "criteria": "sdk/README.md 存在，含两种语言的使用示例", "met": true },
+      { "criteria": "Node SDK 支持 JWT token 和 APIKey 两种认证方式", "met": true },
+      { "criteria": "Python SDK HubLockError 异常类可捕获 409 响应", "met": true },
+      { "criteria": "两个 SDK 都包含所有 worker 端方法（heartbeat/lock/playbook/event/business）", "met": true }
+    ]
+  }
+]

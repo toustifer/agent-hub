@@ -1,0 +1,18 @@
+[Unit]
+Description=agent-hub server
+After=network.target postgresql.service redis.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/agent-hub
+ExecStart=/opt/agent-hub/hub-server
+Restart=always
+RestartSec=5
+EnvironmentFile=/opt/agent-hub/.env
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=agent-hub
+
+[Install]
+WantedBy=multi-user.target

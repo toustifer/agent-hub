@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Hub MCP — 安装指南</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #c9d1d9; line-height: 1.6; }
+  .container { max-width: 720px; margin: 0 auto; padding: 40px 24px; }
+  .header { text-align: center; margin-bottom: 40px; }
+  .header h1 { font-size: 28px; color: #58a6ff; margin-bottom: 8px; }
+  .header p { color: #8b949e; font-size: 14px; }
+  .step { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px 24px; margin-bottom: 16px; }
+  .step h2 { font-size: 16px; color: #f0f6fc; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .step-num { background: #238636; color: #fff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; flex-shrink: 0; }
+  .step code, .step pre { background: #0d1117; border: 1px solid #30363d; border-radius: 4px; font-family: 'Cascadia Code', 'Fira Code', 'SF Mono', monospace; font-size: 13px; }
+  .step code { padding: 2px 6px; }
+  .step pre { padding: 12px 16px; overflow-x: auto; margin: 8px 0; position: relative; white-space: pre-wrap; word-break: break-all; }
+  .copy-btn { position: absolute; top: 8px; right: 8px; background: #30363d; border: 1px solid #484f58; color: #c9d1d9; font-size: 11px; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
+  .copy-btn:hover { background: #484f58; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .tab { padding: 6px 16px; border-radius: 4px; border: 1px solid #30363d; background: #0d1117; color: #8b949e; cursor: pointer; font-size: 13px; }
+  .tab.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .note { background: #1a2332; border-left: 3px solid #58a6ff; padding: 12px 16px; border-radius: 0 4px 4px 0; margin: 12px 0; font-size: 13px; }
+  .note strong { color: #58a6ff; }
+  .verify { color: #3fb950; }
+  .business-input { display: flex; gap: 8px; margin-bottom: 12px; }
+  .business-input input { flex: 1; padding: 8px 12px; border: 1px solid #30363d; border-radius: 4px; background: #0d1117; color: #c9d1d9; font-size: 14px; }
+  .business-input input:focus { outline: none; border-color: #1f6feb; }
+  .footer { text-align: center; color: #8b949e; font-size: 12px; margin-top: 32px; }
+  .footer a { color: #58a6ff; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Agent Hub MCP 安装指南</h1>
+    <p>把 Claude Code 连接到多 Agent 协作面板</p>
+  </div>
+
+  <div class="step">
+    <h2><span class="step-num">1</span> 获取项目标识码</h2>
+    <p>项目标识码在 Dashboard 上显示。没有的话去 <a href="https://hub.stifer.xyz" style="color:#58a6ff">hub.stifer.xyz</a> 创建团队。</p>
+    <div class="business-input" style="margin-top:12px">
+      <input type="text" id="bizCode" placeholder="输入项目标识码，如 siruoning" value="" oninput="updateConfig()">
+    </div>
+  </div>
+
+  <div class="step">
+    <h2><span class="step-num">2</span> 写入 .mcp.json（项目根目录）</h2>
+    <p style="margin-bottom:12px">复制以下配置到项目根目录的 <code>.mcp.json</code>：</p>
+    <pre>{
+  "mcpServers": {
+    "hub": {
+      "type": "http",
+      "url": "https://hub.stifer.xyz/mcp"
+    }
+  }
+}</pre>
+    <div class="note">
+      <strong>一行 URL，零依赖</strong>：不需要 clone 任何仓库，不需要指定操作系统路径。Windows / Mac / Linux 通用。
+    </div>
+  </div>
+
+  <div class="step">
+    <h2><span class="step-num">3</span> 验证连接</h2>
+    <p>在 Claude Code 中运行：</p>
+    <pre>/mcp</pre>
+    <p style="margin-top:8px">如果看到 <span class="verify">hub: connected</span> 就表示成功。打开 <a href="https://hub.stifer.xyz" style="color:#58a6ff">Dashboard</a> 查看项目。</p>
+  </div>
+
+  <div class="footer">
+    <p>Agent Hub · <a href="https://hub.stifer.xyz">Dashboard</a> · <a href="https://github.com/toustifer/agent-hub">GitHub</a></p>
+  </div>
+</div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const biz = params.get('business') || '';
+  if (biz) { document.getElementById('bizCode').value = biz; updateConfig(); }
+
+  function updateConfig() {
+    const code = document.getElementById('bizCode').value || '你的项目标识码';
+    document.querySelectorAll('.biz').forEach(el => el.textContent = code);
+  }
+
+  function switchTab(os) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelector('[onclick="switchTab(\'' + os + '\')"]').classList.add('active');
+    document.getElementById('tab-' + os).classList.add('active');
+  }
+
+  function copyCode(btn) {
+    navigator.clipboard.writeText(btn.parentElement.textContent.replace(/^\s*复制\s*/gm, '').trim()).then(() => {
+      btn.textContent = '已复制!';
+      setTimeout(() => btn.textContent = '复制', 2000);
+    });
+  }
+
+  const ua = navigator.userAgent;
+  if (ua.includes('Windows')) switchTab('win');
+  else if (ua.includes('Mac')) switchTab('mac');
+  else if (ua.includes('Linux')) switchTab('linux');
+</script>
+</body>
+</html>

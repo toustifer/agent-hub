@@ -1,166 +1,137 @@
-# agent-hub
+# Agent Hub
 
-> **agent-company 多租户管理平台** — 让每个团队 / 每个人跑自己的 agent-company，又能跨租户共享知识
+> **agent-company 多 Agent 协作平台** — 任务面板 · 分布式锁 · 经验库 · Worker 心跳监控 · 社区市场
 
-## 它是什么
+**Dashboard**: [hub.stifer.xyz](https://hub.stifer.xyz)  
+**Skill 仓库**: [agent-company-claude-skill](https://github.com/toustifer/agent-company-claude-skill)  
+**安装指南**: [hub.stifer.xyz/setup](https://hub.stifer.xyz/setup)
 
-一个独立的 Go 服务，作为 sub2api v0.1.104 之上的 **agent-company 协调层**。
+---
 
-任何团队 / 任何 agent-company 部署都可以**通过邀请**注册到 hub 上，把自己的：
-- 业务 / 仓库
-- AI Worker 列表
-- 跨业务锁（关键资源互斥）
-- Playbook（决策 / 模式 / 踩坑）
+## 和 agent-company Skill 的关系
 
-托管到这个中心平台上，跨租户共享知识 + 单租户内协调。
-
-**白名单模式**：仅 super-admin（stifer）能创建 business，其他人都是受邀加入。
-
-## 4 个核心能力
-
-1. **业务注册表** — 哪些 agent-company 部署接入 hub（白名单审核）
-2. **Worker 心跳** — 哪个 AI 正在跑、跑什么任务、什么时候离线
-3. **分布式锁** — 跨业务 / 跨 Worker 抢占同一资源（文件 / 业务域）时互斥
-4. **Playbook 知识库** — 跨租户共享架构决策、踩坑、模式
-
-## 用户角色
-
-| 角色 | 谁能 | 看到什么 |
-|---|---|---|
-| super-admin | 创建 business / 邀请 business-admin | 全部 businesses / 全局锁 / 跨租户 playbook |
-| business-admin | 管自己的 workers / 锁 / playbook | 自己 business 的所有数据 |
-| worker (apikey) | heartbeat / acquire lock / upload playbook | 自己 business 的受限操作 |
-
-## 它不是
-
-- 不是 sub2api 的替代品
-- 不是 Claude Code 的替代品
-- 不是 git 的替代品
-- 不是产品 CLI（不做 Telegram / Discord 网关）
-- 不是公开平台（白名单，不开放注册）
-
-## 架构
+Agent Hub 是 [agent-company](https://github.com/toustifer/agent-company-claude-skill) 的配套平台：
 
 ```
-┌────────────────────────────────────────────────────────┐
-│  47.115.134.24 (Aliyun ECS, 1.6GB RAM)                 │
-│                                                         │
-│  ┌──────────────┐  ┌────────────────┐  ┌────────────┐  │
-│  │ sub2api      │  │ ★ agent-hub    │  │ insight-   │  │
-│  │ v0.1.104     │  │ 端口 9000       │  │ tutor      │  │
-│  │ 端口 8080    │  │ ~30MB           │  │ 端口 8000  │  │
-│  │ ~50MB        │  │                 │  │ Docker     │  │
-│  └──────┬───────┘  └────────┬────────┘  └─────┬──────┘  │
-│         │                   │                  │         │
-│         └─────────────┬─────┘                  │         │
-│                       │                        │         │
-│         ┌─────────────▼──────────────┐         │         │
-│         │  PostgreSQL 14 (宿主机)     │◄────────┘         │
-│         │  schemas:                   │                   │
-│         │   public  → sub2api 的表    │                   │
-│         │   public  → insight-tutor 表│                   │
-│         │   ★ hub  → agent-hub 的表   │                   │
-│         └────────────────────────────┘                   │
-│         ┌────────────────────────────┐                   │
-│         │  Redis 6379 (宿主机)        │                   │
-│         └────────────────────────────┘                   │
-│                          │                               │
-│                  ┌───────▼────────┐                      │
-│                  │  cloudflared    │                     │
-│                  │  api.stifer.xyz │                     │
-│                  │  sub2api.stifer │                     │
-│                  │  ★ hub.stifer   │                     │
-│                  │  insight.stifer │                     │
-│                  └─────────────────┘                     │
-└────────────────────────────────────────────────────────┘
+agent-company Skill (Claude Code 里)
+  ├─ Leader  分解目标 → DAG 任务 → 派发 Worker
+  ├─ Worker 执行任务 → 写 session/experience/diary
+  └─ Git 仓库存储 mycompany/ 状态（分布式锁用 git push）
+
+Agent Hub (hub.stifer.xyz)
+  ├─ 可视化 DAG 面板（取代本地的 dag.html）
+  ├─ Worker 在线/离线/stale 实时监控
+  ├─ 分布式锁管理（跨机器文件冲突检测）
+  ├─ Playbook 经验库（全文搜索）
+  ├─ SSE 实时事件流
+  ├─ 社区 Worker 市场（发布/浏览/安装）
+  └─ 邀请制团队协作
 ```
 
-## 核心约束
+**Skill 负责调度，Hub 负责监控和共享。** 没有 Hub 也能用 Skill（纯 Git 协作），有 Hub 更强。
 
-| 约束 | 说明 |
-|---|---|
-| sub2api 0 修改 | 通过 `go.mod replace` 复用 sub2api 包，不动其源码 |
-| 共享数据库 | 同 PostgreSQL，用 `hub` schema 隔离 |
-| 共享 Redis | 锁 + 限流复用 sub2api 的 redis 实例 |
-| 共享认证 | JWT / APIKey 调 sub2api 的 service 校验 |
+## 技术栈
 
-## 目录
+| 层 | 技术 |
+|----|------|
+| 后端 | Go + gin + ent + pgx5 + JWT |
+| 前端 | Vue 3 + TypeScript + Element Plus + Vite |
+| MCP | Node.js HTTP JSON-RPC 服务器 |
+| 数据库 | PostgreSQL 14（hub schema） |
+| 部署 | Aliyun ECS + cloudflared |
 
-```
-agent-hub/
-├── cmd/hub/main.go              # 入口
-├── internal/
-│   ├── config/                  # 配置加载
-│   ├── hub/
-│   │   ├── schema/              # 5 个 ent schema
-│   │   ├── handler/             # gin handler
-│   │   ├── service/             # 业务逻辑
-│   │   ├── repository/          # 数据访问
-│   │   └── router.go            # 路由注册
-│   ├── middleware/              # JWT / APIKey 复用 sub2api
-│   └── server/                  # gin engine 组装
-├── ent/                         # ent 生成代码（不手写）
-├── migrations/                  # SQL migration（partial index / tsvector）
-├── frontend/                    # Vue 3 Hub Dashboard
-├── scripts/                     # 部署 / 启动脚本
-├── deploy/                      # systemd unit / nginx config
-├── docs/                        # 架构 / 接入文档
-└── go.mod                       # require + replace sub2api
+## 快速开始
+
+### 用户（接入 Agent Hub）
+
+**Step 1**: 在项目根目录创建 `.mcp.json`：
+
+```json
+{
+  "mcpServers": {
+    "hub": {
+      "type": "http",
+      "url": "https://hub.stifer.xyz/mcp"
+    }
+  }
+}
 ```
 
-## 快速开始（开发者）
+**Step 2**: 把 `.mcp.json` 加入 `.gitignore`（每台机器各自生成）
+
+**Step 3**: 重启 Claude Code，`/mcp` 验证连接
+
+**Step 4**: 在 Claude Code 中运行 `/agent-company init` 自动注册项目
+
+详细安装指南：[hub.stifer.xyz/setup](https://hub.stifer.xyz/setup)
+
+### 开发者（部署自己的 Hub）
 
 ```bash
-# 1. 拉 sub2api 源码到本地（用于 go.mod replace）
-git clone https://github.com/Wei-Shaw/sub2api.git /opt/sub2api-src
-
-# 2. 本地开发
+git clone https://github.com/toustifer/agent-hub.git
 cp .env.example .env
+# 编辑 .env 填入 DATABASE_URL、JWT_SECRET
 go mod download
 go generate ./ent
 go run ./cmd/hub
-
-# 3. 构建
-go build -o bin/hub ./cmd/hub
 ```
 
-## 快速开始（业务接入）
+## 核心功能
 
-```bash
-# 1. 注册业务
-curl -X POST https://hub.stifer.xyz/v1/hub/businesses \
-  -H "Authorization: Bearer $ADMIN_JWT" \
-  -d '{"code":"siruoning","name":"AI 智能药盒","repo_url":"git@github.com:..."}'
+| 功能 | 说明 |
+|------|------|
+| Team Dashboard | 概览 / Worker 列表 / 分布式锁 / 经验库 / 事件流 / DAG 面板 |
+| Worker 监控 | 心跳检测 · 在线/离线 · 超时自动标记 stale |
+| 分布式锁 | 跨机器文件锁 · 409 冲突 · 锁过期自动清理 |
+| Playbook | 经验库全文搜索（tsvector+GIN）· upsert 去重 |
+| SSE 事件 | PostgreSQL LISTEN/NOTIFY → SSE 推送实时事件 |
+| 社区市场 | Worker 发布（去敏）→ 浏览/搜索/筛选 → 一键安装 |
+| 团队协作 | 邀请制 · 角色管理 · 项目唯一标识 |
+| MCP | HTTP JSON-RPC 端点 · OAuth 2.0 设备授权 |
+| 中英双语 | 全量 i18n · 一键切换 |
 
-# 2. 创建 APIKey
-curl -X POST https://hub.stifer.xyz/v1/hub/apikeys \
-  -H "Authorization: Bearer $ADMIN_JWT" \
-  -d '{"business_code":"siruoning","name":"worker-medication"}'
+## 目录结构
 
-# 3. Worker 启动时接入（业务仓内）
-node .mycompany/hub-boot.js
+```
+agent-hub/
+├── cmd/hub/                  # 入口
+├── internal/
+│   ├── config/               # 配置（viper + .env）
+│   ├── hub/
+│   │   ├── handler/          # HTTP handlers
+│   │   ├── service/          # 业务逻辑
+│   │   ├── repository/       # 数据访问 + migrations
+│   │   └── router.go         # 路由注册
+│   ├── middleware/           # JWT / APIKey / CORS / 日志
+│   └── server/               # gin engine 组装
+├── ent/schema/               # ent schema 定义
+├── mcp-server/               # MCP HTTP 服务器
+├── frontend/                 # Vue 3 Dashboard
+├── scripts/                  # sync-workers / test-api / deploy
+├── setup.html                # 安装引导页（免登录）
+└── deploy/                   # systemd / nginx
 ```
 
-## 路线图
+## OAuth 2.0 授权
 
-| 阶段 | 内容 | 工期 |
-|---|---|---|
-| Phase 0 | 项目骨架 | 0.5 天 |
-| Phase 1 | 5 个 ent schema + 索引 | 2 天 |
-| Phase 2 | 6 个 service（business/worker/lock/playbook/event） | 2 天 |
-| Phase 3 | HTTP 层（handler + middleware + router） | 1 天 |
-| Phase 4 | Hub Dashboard 前端 | 1-2 天 |
-| Phase 5 | hub-client SDK（js + py） | 1-2 天 |
-| Phase 6 | 部署（systemd + nginx + cloudflared） | 1 天 |
-| Phase 7 | 跨业务接通 + 文档 | 1 周 |
+```
+Claude Code → 发现 OAuth 元数据 → 动态客户端注册
+  → 设备授权（device_code + verification_uri）
+  → 浏览器打开认证 → 用户批准
+  → Token 交换（authorization_code grant）
+  → Bearer JWT → API 访问
+```
 
-## 详细文档
+支持 device_code 和 authorization_code 两种 grant type。form 和 JSON 两种请求格式。
 
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — 架构决策、设计原则、与 sub2api 的边界
-- [docs/PLAN.md](docs/PLAN.md) — 完整实施计划（含决策历史）
-- [docs/INTEGRATION.md](docs/INTEGRATION.md) — 业务接入指南（worker 端）
-- [docs/OPERATIONS.md](docs/OPERATIONS.md) — 运维手册（备份、升级、故障恢复）
+## 社区 Worker 市场
 
-## 状态
+跨项目复用 Worker 经验：
 
-🚧 Phase 0 进行中
+- **发布**: TeamPage → Worker 抽屉 → 发布到社区（支持自动去敏）
+- **浏览**: `/community` → 搜索/领域筛选/排序
+- **安装**: 社区详情页 → 选择目标项目 → 一键导入 handbook + playbooks
+
+## License
+
+MIT

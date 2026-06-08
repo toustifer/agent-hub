@@ -27,7 +27,7 @@
         "internal/config/",
         "internal/server/"
       ],
-      "status": "active",
+      "status": "idle",
       "currentTask": "T-1.1 完善 main.go 启动流程",
       "history": [
         {
@@ -50,8 +50,23 @@
         "internal/hub/repository/"
       ],
       "status": "idle",
-      "currentTask": "T-2.1 HubBusinessService",
-      "history": []
+      "currentTask": null,
+      "history": [
+        {
+          "taskId": "T-2",
+          "title": "Phase 2: 5 个 service 层",
+          "description": "Business/Worker/Lock/Playbook/Event services, 26 methods, lock uses raw SQL for partial unique index",
+          "completedAt": "2026-06-05T16:14:00+08:00",
+          "outputFiles": [
+            "internal/hub/service/service.go",
+            "internal/hub/service/business_service.go",
+            "internal/hub/service/worker_service.go",
+            "internal/hub/service/lock_service.go",
+            "internal/hub/service/playbook_service.go",
+            "internal/hub/service/event_service.go"
+          ]
+        }
+      ]
     },
     {
       "id": "worker-go-http",
@@ -66,8 +81,30 @@
         "internal/middleware/"
       ],
       "status": "idle",
-      "currentTask": "T-3.1 5 个 handler skeleton",
-      "history": []
+      "currentTask": null,
+      "history": [
+        {
+          "taskId": "T-3",
+          "title": "Phase 3: HTTP 层（handlers + router + middleware）",
+          "description": "创建 12 个新 Go 文件 + 重写 server.go：5 middleware + 6 handler + 1 router + 1 server",
+          "completedAt": "2026-06-05T16:45:00+08:00",
+          "outputFiles": [
+            "internal/middleware/middleware.go",
+            "internal/middleware/jwt.go",
+            "internal/middleware/apikey.go",
+            "internal/middleware/cors.go",
+            "internal/middleware/logging.go",
+            "internal/hub/handler/handler.go",
+            "internal/hub/handler/business_handler.go",
+            "internal/hub/handler/worker_handler.go",
+            "internal/hub/handler/lock_handler.go",
+            "internal/hub/handler/playbook_handler.go",
+            "internal/hub/handler/event_handler.go",
+            "internal/hub/router.go",
+            "internal/server/server.go"
+          ]
+        }
+      ]
     },
     {
       "id": "worker-go-deploy",
@@ -95,8 +132,36 @@
         "frontend/"
       ],
       "status": "idle",
-      "currentTask": "T-4.1 Vite 项目初始化",
-      "history": []
+      "currentTask": null,
+      "history": [
+        {
+          "taskId": "T-4",
+          "title": "Phase 4: Vue 3 Dashboard",
+          "description": "19 files: 3 config + 3 src entry + 2 API + 2 stores + 1 router + 1 layout + 7 views, all Composition API",
+          "completedAt": "2026-06-05T16:45:00+08:00",
+          "outputFiles": [
+            "frontend/package.json",
+            "frontend/vite.config.ts",
+            "frontend/index.html",
+            "frontend/src/main.ts",
+            "frontend/src/App.vue",
+            "frontend/src/env.d.ts",
+            "frontend/src/api/hub.ts",
+            "frontend/src/types/hub.ts",
+            "frontend/src/stores/auth.ts",
+            "frontend/src/stores/app.ts",
+            "frontend/src/router/index.ts",
+            "frontend/src/layouts/MainLayout.vue",
+            "frontend/src/views/Login.vue",
+            "frontend/src/views/Dashboard.vue",
+            "frontend/src/views/BusinessList.vue",
+            "frontend/src/views/WorkerList.vue",
+            "frontend/src/views/LockList.vue",
+            "frontend/src/views/PlaybookSearch.vue",
+            "frontend/src/views/EventStream.vue"
+          ]
+        }
+      ]
     },
     {
       "id": "worker-sdk",
@@ -124,7 +189,7 @@
         "internal/hub/repository/migrations/"
       ],
       "status": "idle",
-      "currentTask": "T-1.X migration 审计",
+      "currentTask": null,
       "history": [
         {
           "taskId": "T-1.0",
@@ -140,56 +205,182 @@
       "taskId": "T-0.1",
       "title": "项目骨架 + 文档",
       "status": "completed",
-      "completedAt": "2026-06-05T13:30:00+08:00"
+      "completedAt": "2026-06-05T13:30:00+08:00",
+      "assignedWorker": "worker-go-infra",
+      "dependencies": [],
+      "outputFiles": []
     },
     {
       "taskId": "T-1.0",
       "title": "5 ent schemas + 3 migrations",
       "status": "completed",
       "completedAt": "2026-06-05T14:25:00+08:00",
-      "owner": "worker-database"
+      "assignedWorker": "worker-database",
+      "dependencies": [],
+      "outputFiles": []
     },
     {
       "taskId": "T-2",
       "title": "Phase 2: 5 个 service 层",
-      "status": "in_progress",
-      "dependsOn": ["T-1.0"],
-      "owner": "worker-go-domain"
+      "status": "completed",
+      "completedAt": "2026-06-05T16:14:00+08:00",
+      "claimedBy": "stifer",
+      "claimedAt": "2026-06-05T15:30:00+08:00",
+      "dependencies": ["T-1.0"],
+      "assignedWorker": "worker-go-domain",
+      "outputFiles": []
     },
     {
       "taskId": "T-3",
       "title": "Phase 3: HTTP 层（handlers + router + middleware）",
-      "status": "pending",
-      "dependsOn": ["T-2"],
-      "owner": "worker-go-http"
+      "status": "completed",
+      "completedAt": "2026-06-05T16:45:00+08:00",
+      "dependencies": ["T-2"],
+      "assignedWorker": "worker-go-http",
+      "outputFiles": []
     },
     {
       "taskId": "T-4",
       "title": "Phase 4: Vue 3 Dashboard",
-      "status": "pending",
-      "dependsOn": ["T-2"],
-      "owner": "worker-frontend"
+      "status": "completed",
+      "completedAt": "2026-06-05T16:45:00+08:00",
+      "dependencies": ["T-2"],
+      "assignedWorker": "worker-frontend",
+      "outputFiles": []
     },
     {
       "taskId": "T-5",
       "title": "Phase 5: hub-client SDK",
-      "status": "pending",
-      "dependsOn": ["T-3"],
-      "owner": "worker-sdk"
+      "status": "completed",
+      "completedAt": "2026-06-05T17:20:00+08:00",
+      "dependencies": ["T-3"],
+      "assignedWorker": "worker-sdk",
+      "outputFiles": []
     },
     {
       "taskId": "T-6",
       "title": "Phase 6: 部署到 47.115.134.24",
-      "status": "pending",
-      "dependsOn": ["T-3"],
-      "owner": "worker-go-deploy"
+      "status": "completed",
+      "completedAt": "2026-06-05T21:31:00+08:00",
+      "dependencies": ["T-3"],
+      "assignedWorker": "worker-go-deploy",
+      "outputFiles": []
     },
     {
       "taskId": "T-7",
       "title": "Phase 7: 跨业务接通 + 文档",
-      "status": "pending",
-      "dependsOn": ["T-5", "T-6"],
-      "owner": "stifer"
+      "status": "completed",
+      "completedAt": "2026-06-06T00:08:00+08:00",
+      "dependencies": ["T-5", "T-6"],
+      "assignedWorker": "worker-go-infra",
+      "outputFiles": []
+    },
+    {
+      "taskId": "T-8",
+      "title": "社区市场 — 数据库层（ent schema + migration）",
+      "status": "completed",
+      "completedAt": "2026-06-07T10:20:00+08:00",
+      "claimedBy": "stifer",
+      "claimedAt": "2026-06-07T10:00:00+08:00",
+      "assignedWorker": "worker-database",
+      "acceptanceCriteria": [
+        "ent/schema/hub_community_worker.go 包含所有字段",
+        "ent/schema/hub_community_review.go 包含字段",
+        "go generate ./ent 成功生成 Go 代码",
+        "migrations/0004_community_workers.sql 创建两张表",
+        "索引: domain, install_count, publisher_user_id"
+      ],
+      "dependencies": [],
+      "outputFiles": [
+        "ent/schema/hub_community_worker.go",
+        "ent/schema/hub_community_review.go",
+        "internal/hub/repository/migrations/0004_community_workers.sql"
+      ]
+    },
+    {
+      "taskId": "T-9",
+      "title": "社区市场 — 后端 Service 层（community_service.go）",
+      "status": "completed",
+      "completedAt": "2026-06-07T10:45:00+08:00",
+      "assignedWorker": "worker-go-domain",
+      "acceptanceCriteria": [
+        "PublishWorker(ctx, publisherUserID, title, description, domain, scope, handbook, playbooks, tags) 创建社区 worker",
+        "ListCommunityWorkers(ctx, search, domain, sort, page, limit) 支持搜索/筛选/排序/分页",
+        "GetCommunityWorker(ctx, id) 返回单个社区 worker 详情",
+        "InstallWorker(ctx, communityWorkerID, targetBusinessCode) 安装到目标项目（创建 worker + 导入 playbooks + install_count +1）",
+        "去敏逻辑: 自动检测文件路径/URL/IP/API Key 并替换"
+      ],
+      "dependencies": ["T-8"],
+      "outputFiles": [
+        "internal/hub/service/community_service.go"
+      ]
+    },
+    {
+      "taskId": "T-10",
+      "title": "社区市场 — 后端 Handler + 路由",
+      "status": "completed",
+      "completedAt": "2026-06-07T11:05:00+08:00",
+      "assignedWorker": "worker-go-http",
+      "acceptanceCriteria": [
+        "POST /v1/hub/community/workers — 发布 worker",
+        "GET /v1/hub/community/workers — 浏览列表（search, domain, sort, page, limit query params）",
+        "GET /v1/hub/community/workers/:id — 获取详情",
+        "POST /v1/hub/community/workers/:id/install — 安装到项目（body: {business_code}）",
+        "GET /v1/hub/community/workers/:id/reviews — 评价列表",
+        "POST /v1/hub/community/workers/:id/reviews — 添加评价",
+        "所有路由在 JWT 认证组下注册"
+      ],
+      "dependencies": ["T-9"],
+      "outputFiles": [
+        "internal/hub/handler/community_handler.go",
+        "internal/hub/router.go"
+      ]
+    },
+    {
+      "taskId": "T-11",
+      "title": "社区市场 — 前端（API + 页面 + 路由 + 导航 + 发布入口）",
+      "status": "completed",
+      "completedAt": "2026-06-07T11:30:00+08:00",
+      "assignedWorker": "worker-frontend",
+      "acceptanceCriteria": [
+        "api/hub.ts 新增 5 个社区 API 函数",
+        "i18n/index.ts 新增 community.* 翻译组（中英双语）",
+        "CommunityPage.vue — 浏览/搜索/筛选/排序，卡片网格布局，loading/empty/error 状态",
+        "CommunityWorkerDetail.vue — 详情 + Handbook/Playbooks Tabs + 安装按钮 + 选择目标项目对话框",
+        "router/index.ts 新增 /community 和 /community/:id 路由",
+        "MainLayout.vue 侧边栏新增「社区市场」导航项",
+        "TeamPage.vue Worker 详情抽屉新增「发布到社区」按钮 + 发布对话框（预览 + 去敏 + 填写信息）"
+      ],
+      "dependencies": ["T-9", "T-10"],
+      "outputFiles": [
+        "frontend/src/api/hub.ts",
+        "frontend/src/i18n/index.ts",
+        "frontend/src/views/CommunityPage.vue",
+        "frontend/src/views/CommunityWorkerDetail.vue",
+        "frontend/src/router/index.ts",
+        "frontend/src/layouts/MainLayout.vue",
+        "frontend/src/views/TeamPage.vue"
+      ]
+    },
+    {
+      "taskId": "T-12",
+      "title": "社区市场 — 部署 + 端到端测试",
+      "status": "completed",
+      "completedAt": "2026-06-07T15:20:00+08:00",
+      "claimedBy": "stifer",
+      "claimedAt": "2026-06-07T15:00:00+08:00",
+      "assignedWorker": "worker-go-deploy",
+      "acceptanceCriteria": [
+        "后端 go build 通过，上传到服务器",
+        "运行 migration 0004",
+        "前端 npm run build 通过，上传",
+        "curl 测试每个新 API 端点返回正确数据",
+        "DB 验证: SELECT * FROM hub.hub_community_workers 确认数据写入",
+        "浏览器验证: /community 页面渲染正常，发布→浏览→安装完整流程可走通",
+        "i18n: 中英文切换所有新文本正确"
+      ],
+      "dependencies": ["T-10", "T-11"],
+      "outputFiles": []
     }
   ]
 }

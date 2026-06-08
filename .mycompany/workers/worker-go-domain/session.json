@@ -1,0 +1,35 @@
+[
+  {
+    "taskId": "T-2",
+    "title": "Phase 2: 5 个 service 层",
+    "completedAt": "2026-06-05T16:14:00+08:00",
+    "outputFiles": [
+      "internal/hub/service/service.go",
+      "internal/hub/service/business_service.go",
+      "internal/hub/service/worker_service.go",
+      "internal/hub/service/lock_service.go",
+      "internal/hub/service/playbook_service.go",
+      "internal/hub/service/event_service.go"
+    ],
+    "methodCount": 26,
+    "notes": "Lock service uses raw SQL for partial unique index support. Heartbeat uses check-then-upsert. SearchPlaybooks uses plainto_tsquery('simple'). StreamEvents polls every 1s via goroutine + channel."
+  },
+  {
+    "taskId": "T-9",
+    "title": "社区市场后端 Service 层",
+    "completedAt": "2026-06-07T12:00:00+08:00",
+    "outputFiles": [
+      "internal/hub/service/community_service.go"
+    ],
+    "methods": [
+      "PublishWorker",
+      "ListCommunityWorkers",
+      "GetCommunityWorker",
+      "InstallWorker",
+      "GetCommunityWorkerReviews",
+      "AddCommunityWorkerReview"
+    ],
+    "helpers": ["deidentify"],
+    "notes": "InstallWorker uses pgx transaction (Begin/Commit/Rollback) wrapping 3 operations: insert hub_worker, import playbooks, increment install_count. ListCommunityWorkers uses raw SQL for dynamic filters (ILIKE search, domain, sort/pagination) + ent for final fetch. Deidentify covers file paths (Unix+Windows), URLs, IPs, API keys (sk-/Bearer)."
+  }
+]

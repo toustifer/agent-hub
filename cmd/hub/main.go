@@ -1,40 +1,86 @@
-// Command hub 是 agent-hub 的入口。
-//
-// 启动流程：
-//  1. 加载配置（viper + .env）
-//  2. 初始化 logger（zap）
-//  3. 连接 PostgreSQL（schema=hub）
-//  4. 连接 Redis
-//  5. 跑 migration
-//  6. 启动后台任务（锁清理、Worker 离线检测）
-//  7. 启动 HTTP 服务（gin）
 package main
 
 import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
+
+	"github.com/stifer/agent-hub/internal/config"
+	"github.com/stifer/agent-hub/internal/hub/handler"
+	"github.com/stifer/agent-hub/internal/hub/repository"
+	"github.com/stifer/agent-hub/internal/hub/service"
+	"github.com/stifer/agent-hub/internal/middleware"
+	"github.com/stifer/agent-hub/internal/server"
 )
 
 func main() {
 	fmt.Println("agent-hub starting...")
 
-	// 占位实现：完整启动流程在 Phase 3 接入
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("load config: %v", err)
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// 监听退出信号
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	client, pool, err := repository.NewClient(ctx, cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("init repository: %v", err)
+	}
+	defer client.Close()
+	defer pool.Close()
+
+	svc := service.New(client, pool)
+	mw := middleware.New(pool)
+	h := handler.New(svc, cfg.JWTSecret)
+	srv := server.New(mw, h, cfg)
+
+	addr := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
+	httpSrv := &http.Server{
+		Addr:    addr,
+		Handler: srv,
+	}
+
 	go func() {
-		<-sigCh
-		log.Println("shutdown signal received")
-		cancel()
+		fmt.Printf("agent-hub listening on %s\n", addr)
+		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("server error: %v", err)
+		}
 	}()
 
-	<-ctx.Done()
-	log.Println("agent-hub stopped")
+	// Background stale lock cleanup
+	go func() {
+		ticker := time.NewTicker(60 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				count, err := svc.CleanupExpiredLocks(ctx)
+				if err != nil {
+					fmt.Printf("lock cleanup error: %v\n", err)
+				} else if count > 0 {
+					fmt.Printf("cleaned %d expired locks\n", count)
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	<-sigCh
+
+	fmt.Println("shutting down...")
+	cancel()
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+	httpSrv.Shutdown(shutdownCtx)
+	fmt.Println("agent-hub stopped")
 }
