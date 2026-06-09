@@ -48,3 +48,6 @@ data/
 # !ent/generate.go
 # !ent/migrate/migrations.go
 .mcp.json
+hub-server
+hub-server-linux
+cmd/hub/hub
