@@ -118,7 +118,7 @@
         "scripts/"
       ],
       "status": "idle",
-      "currentTask": "T-6.1 systemd unit",
+      "currentTask": "T-13",
       "history": []
     },
     {
@@ -226,7 +226,9 @@
       "completedAt": "2026-06-05T16:14:00+08:00",
       "claimedBy": "stifer",
       "claimedAt": "2026-06-05T15:30:00+08:00",
-      "dependencies": ["T-1.0"],
+      "dependencies": [
+        "T-1.0"
+      ],
       "assignedWorker": "worker-go-domain",
       "outputFiles": []
     },
@@ -235,7 +237,9 @@
       "title": "Phase 3: HTTP 层（handlers + router + middleware）",
       "status": "completed",
       "completedAt": "2026-06-05T16:45:00+08:00",
-      "dependencies": ["T-2"],
+      "dependencies": [
+        "T-2"
+      ],
       "assignedWorker": "worker-go-http",
       "outputFiles": []
     },
@@ -244,7 +248,9 @@
       "title": "Phase 4: Vue 3 Dashboard",
       "status": "completed",
       "completedAt": "2026-06-05T16:45:00+08:00",
-      "dependencies": ["T-2"],
+      "dependencies": [
+        "T-2"
+      ],
       "assignedWorker": "worker-frontend",
       "outputFiles": []
     },
@@ -253,7 +259,9 @@
       "title": "Phase 5: hub-client SDK",
       "status": "completed",
       "completedAt": "2026-06-05T17:20:00+08:00",
-      "dependencies": ["T-3"],
+      "dependencies": [
+        "T-3"
+      ],
       "assignedWorker": "worker-sdk",
       "outputFiles": []
     },
@@ -262,7 +270,9 @@
       "title": "Phase 6: 部署到 47.115.134.24",
       "status": "completed",
       "completedAt": "2026-06-05T21:31:00+08:00",
-      "dependencies": ["T-3"],
+      "dependencies": [
+        "T-3"
+      ],
       "assignedWorker": "worker-go-deploy",
       "outputFiles": []
     },
@@ -271,7 +281,10 @@
       "title": "Phase 7: 跨业务接通 + 文档",
       "status": "completed",
       "completedAt": "2026-06-06T00:08:00+08:00",
-      "dependencies": ["T-5", "T-6"],
+      "dependencies": [
+        "T-5",
+        "T-6"
+      ],
       "assignedWorker": "worker-go-infra",
       "outputFiles": []
     },
@@ -310,7 +323,9 @@
         "InstallWorker(ctx, communityWorkerID, targetBusinessCode) 安装到目标项目（创建 worker + 导入 playbooks + install_count +1）",
         "去敏逻辑: 自动检测文件路径/URL/IP/API Key 并替换"
       ],
-      "dependencies": ["T-8"],
+      "dependencies": [
+        "T-8"
+      ],
       "outputFiles": [
         "internal/hub/service/community_service.go"
       ]
@@ -330,7 +345,9 @@
         "POST /v1/hub/community/workers/:id/reviews — 添加评价",
         "所有路由在 JWT 认证组下注册"
       ],
-      "dependencies": ["T-9"],
+      "dependencies": [
+        "T-9"
+      ],
       "outputFiles": [
         "internal/hub/handler/community_handler.go",
         "internal/hub/router.go"
@@ -351,7 +368,10 @@
         "MainLayout.vue 侧边栏新增「社区市场」导航项",
         "TeamPage.vue Worker 详情抽屉新增「发布到社区」按钮 + 发布对话框（预览 + 去敏 + 填写信息）"
       ],
-      "dependencies": ["T-9", "T-10"],
+      "dependencies": [
+        "T-9",
+        "T-10"
+      ],
       "outputFiles": [
         "frontend/src/api/hub.ts",
         "frontend/src/i18n/index.ts",
@@ -379,8 +399,116 @@
         "浏览器验证: /community 页面渲染正常，发布→浏览→安装完整流程可走通",
         "i18n: 中英文切换所有新文本正确"
       ],
-      "dependencies": ["T-10", "T-11"],
+      "dependencies": [
+        "T-10",
+        "T-11"
+      ],
+      "outputFiles": []
+    },
+    {
+      "taskId": "T-13",
+      "title": "找 hub.stifer.xyz 实际服务器位置",
+      "description": "排查 DNS / SSH / Docker 容器，确定 hub 服务实际部署在哪台机器的哪个位置。目前已知：hub.stifer.xyz → Cloudflare → ?，8.152.223.109 上没找到 hub 进程",
+      "acceptanceCriteria": [
+        "确定目标服务器的 IP 或容器名",
+        "确定 hub-server 二进制和 .env 配置文件的路径",
+        "确定 PostgreSQL 连接方式和 migration 如何执行"
+      ],
+      "dependencies": [],
+      "assignedWorker": "worker-go-deploy",
+      "status": "pending",
+      "claimedBy": null,
+      "claimedAt": null,
+      "outputFiles": []
+    },
+    {
+      "taskId": "T-14",
+      "title": "编译 linux/amd64 二进制",
+      "description": "在本地交叉编译 hub-server 为 linux/amd64，上传到服务器 /tmp/",
+      "acceptanceCriteria": [
+        "GOOS=linux GOARCH=amd64 go build 成功",
+        "scp 到目标服务器"
+      ],
+      "dependencies": [],
+      "assignedWorker": "worker-go-deploy",
+      "status": "pending",
+      "claimedBy": null,
+      "claimedAt": null,
+      "outputFiles": [
+        "/tmp/hub-server-linux"
+      ]
+    },
+    {
+      "taskId": "T-15",
+      "title": "执行 SQL 迁移 0005",
+      "description": "在目标数据库上执行 internal/hub/repository/migrations/0005_device_code_user_id.sql，增加 confirmed_by_user_id 字段",
+      "acceptanceCriteria": [
+        "迁移 SQL 执行成功",
+        "hub.hub_device_codes 表增加 confirmed_by_user_id 列"
+      ],
+      "dependencies": [
+        "T-13"
+      ],
+      "assignedWorker": "worker-database",
+      "status": "pending",
+      "claimedBy": null,
+      "claimedAt": null,
+      "outputFiles": []
+    },
+    {
+      "taskId": "T-16",
+      "title": "替换二进制 + 重启服务",
+      "description": "用新编译的 hub-server 替换旧版本，重启服务（systemd restart 或 docker restart），验证进程启动正常",
+      "acceptanceCriteria": [
+        "旧二进制备份",
+        "新二进制替换成功",
+        "服务重启成功（systemctl is-active）",
+        "curl /healthz 返回 200"
+      ],
+      "dependencies": [
+        "T-13",
+        "T-14"
+      ],
+      "assignedWorker": "worker-go-deploy",
+      "status": "pending",
+      "claimedBy": null,
+      "claimedAt": null,
+      "outputFiles": []
+    },
+    {
+      "taskId": "T-17",
+      "title": "验证 OAuth 设备授权修复",
+      "description": "端到端测试：发起设备授权 -> OAuth 确认 -> 拿到 token -> 检查 token 中 uid 是否为真实用户 ID（>0）而不是匿名 uid=0",
+      "acceptanceCriteria": [
+        "POST /v1/hub/auth/device 返回 code",
+        "浏览器确认后 token 获取成功",
+        "解析 JWT，uid > 0 （真实用户）",
+        "用该 token 创建 project -> 返回 api_key",
+        "该项目能在 /v1/hub/me/businesses 中看到"
+      ],
+      "dependencies": [
+        "T-15",
+        "T-16"
+      ],
+      "assignedWorker": "worker-go-deploy",
+      "status": "pending",
+      "claimedBy": null,
+      "claimedAt": null,
       "outputFiles": []
     }
-  ]
+  ],
+  "overlapAnalysis": {
+    "analyzedAt": "2026-06-16T10:31:51.471Z",
+    "affectedWorkers": [
+      {
+        "workerId": "worker-go-deploy",
+        "how": "编译二进制 + 上传服务器 + 替换重启"
+      },
+      {
+        "workerId": "worker-database",
+        "how": "执行 0005 SQL 迁移"
+      }
+    ],
+    "newWorkersNeeded": []
+  }
 }
