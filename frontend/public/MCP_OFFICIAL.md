@@ -31,16 +31,24 @@
 ```text
 当前拓扑:
 
-  Claude ──Streamable HTTP + OAuth/Bearer──►  https://hub.stifer.xyz/mcp
-                                                    │
-                                              (同进程 Go Hub)
-                                                    │
-                                              internal/mcp tools
-                                              → service / SQL
-                                              JWT + membership
+  Claude / Codex / Cursor ──Streamable HTTP + OAuth/Bearer──►  https://hub.stifer.xyz/mcp
+                                                                    │
+                                                              (同进程 Go Hub)
+                                                                    │
+                                                              internal/mcp tools
+                                                              → service / SQL
+                                                              JWT + membership
 
   agentflow 本地引擎 ── REST soft-sync ──► hub.stifer.xyz /v1/hub/*
 ```
+
+**Host 配置入口**
+
+| Host | 配置 |
+|------|------|
+| Claude Code | `.mcp.json` `type: http` + URL（见 [MCP_FOR_AI.md](./MCP_FOR_AI.md)） |
+| **Codex CLI** | `codex mcp add hub --url https://hub.stifer.xyz/mcp` + `codex mcp login hub` → [codex-setup.md](../frontend/public/codex-setup.md) / https://hub.stifer.xyz/codex-setup.md |
+| Cursor | 同 Claude remote HTTP MCP |
 
 ## 3. 与 agentflow 的边界
 

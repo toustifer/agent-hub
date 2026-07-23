@@ -1,10 +1,11 @@
 # Agent Hub MCP — configuration guide for AI agents
 
-> **Audience:** coding agents (Claude Code, Cursor, etc.) and humans pasting into AI context.  
+> **Audience:** coding agents (Claude Code, Codex CLI, Cursor, etc.) and humans pasting into AI context.  
 > **Canonical URL:** https://hub.stifer.xyz/mcp.md  
 > **Hub base URL:** https://hub.stifer.xyz  
 > **MCP endpoint (primary):** `https://hub.stifer.xyz/mcp` — official Streamable HTTP in the Go Hub process  
-> **Last product model:** remote MCP + OAuth/JWT; local Node stdio bridge is **legacy**.
+> **Last product model:** remote MCP + OAuth/JWT; local Node stdio bridge is **legacy**.  
+> **Codex-specific guide:** https://hub.stifer.xyz/codex-setup.md
 
 If you were told to “connect this project to Agent Hub”, follow this file top to bottom. Do not invent API keys.
 
@@ -45,6 +46,28 @@ Host will discover OAuth via:
 - Device / authorize + token endpoints listed in metadata
 
 After OAuth, the Host sends `Authorization: Bearer <access_token>` on MCP requests. Access tokens are Hub JWTs (same as REST).
+
+### 1.1b Codex CLI (Streamable HTTP)
+
+```bash
+codex mcp add hub --url https://hub.stifer.xyz/mcp
+codex mcp login hub
+```
+
+Writes to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.hub]
+url = "https://hub.stifer.xyz/mcp"
+```
+
+Bearer fallback (no OAuth store):
+
+```bash
+codex mcp add hub --url https://hub.stifer.xyz/mcp --bearer-token-env-var HUB_TOKEN
+```
+
+Full Codex guide (stdio agentflow optional, soft-sync, troubleshooting): https://hub.stifer.xyz/codex-setup.md
 
 ### 1.2 Manual Bearer (Inspector / curl / debugging)
 

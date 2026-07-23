@@ -29,6 +29,59 @@
       </el-alert>
 
       <el-tabs v-model="tab" style="margin-top:16px">
+        <!-- Codex CLI -->
+        <el-tab-pane :label="t('docs.tabCodex')" name="codex">
+          <el-card shadow="never" class="ai-card" style="margin-bottom:16px">
+            <div class="ai-row">
+              <div>
+                <div class="ai-title">{{ t('docs.codexAiDoc') }}</div>
+                <div class="ai-hint">{{ t('docs.codexAiDocHint') }}</div>
+                <code class="url">{{ codexSetupUrl }}</code>
+              </div>
+              <div class="ai-actions">
+                <el-button type="primary" @click="copy(codexSetupUrl)">{{ t('docs.copy') }}</el-button>
+                <el-button @click="open(codexSetupUrl)">{{ t('docs.open') }}</el-button>
+              </div>
+            </div>
+          </el-card>
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-card shadow="hover">
+                <template #header><span>{{ t('docs.codexStep1') }}</span></template>
+                <p class="hint">{{ t('docs.codexStep1hint') }}</p>
+                <pre class="code"><button class="copy" type="button" @click="copy(codexAddCmd)">{{ t('docs.copy') }}</button>{{ codexAddCmd }}</pre>
+              </el-card>
+            </el-col>
+            <el-col :span="12">
+              <el-card shadow="hover">
+                <template #header><span>{{ t('docs.codexStep2') }}</span></template>
+                <p class="hint">{{ t('docs.codexStep2hint') }}</p>
+                <pre class="code"><button class="copy" type="button" @click="copy(codexLoginCmd)">{{ t('docs.copy') }}</button>{{ codexLoginCmd }}</pre>
+              </el-card>
+            </el-col>
+          </el-row>
+          <el-row :gutter="16" style="margin-top:16px">
+            <el-col :span="12">
+              <el-card shadow="hover">
+                <template #header><span>{{ t('docs.codexStep3') }}</span></template>
+                <p class="body">{{ t('docs.codexStep3body') }}</p>
+              </el-card>
+            </el-col>
+            <el-col :span="12">
+              <el-card shadow="hover">
+                <template #header><span>{{ t('docs.codexStep4') }}</span></template>
+                <p class="body">{{ t('docs.codexStep4body') }}</p>
+              </el-card>
+            </el-col>
+          </el-row>
+          <el-card shadow="never" style="margin-top:16px">
+            <template #header><span>{{ t('docs.codexAuthTitle') }}</span></template>
+            <p class="body">{{ t('docs.codexAuthBearer') }}</p>
+            <p class="hint" style="margin-top:12px">{{ t('docs.codexTomlTitle') }}</p>
+            <pre class="code"><button class="copy" type="button" @click="copy(codexToml)">{{ t('docs.copy') }}</button>{{ codexToml }}</pre>
+          </el-card>
+        </el-tab-pane>
+
         <!-- Scenario 1: agentflow first (personal local must) -->
         <el-tab-pane :label="t('docs.tabAgentflow')" name="agentflow">
           <el-card shadow="never" class="ai-card" style="margin-bottom:16px">
@@ -141,7 +194,16 @@ const { t } = useI18n()
 const tab = ref('agentflow')
 const agentSetupUrl = 'https://hub.stifer.xyz/agent-setup.md'
 const agentflowDocUrl = 'https://hub.stifer.xyz/agentflow-setup.md'
+const codexSetupUrl = 'https://hub.stifer.xyz/codex-setup.md'
 const mcpEndpoint = 'https://hub.stifer.xyz/mcp'
+
+const codexAddCmd = 'codex mcp add hub --url https://hub.stifer.xyz/mcp'
+const codexLoginCmd = 'codex mcp login hub'
+const codexToml = `[mcp_servers.hub]
+url = "https://hub.stifer.xyz/mcp"
+# OAuth: codex mcp login hub
+# Bearer fallback:
+# bearer_token_env_var = "HUB_TOKEN"`
 
 const agentflowOnlyJson = `{
   "mcpServers": {
