@@ -1,101 +1,68 @@
 # agentflow setup for AI agents
 
 > Paste into Claude.  
-> **Skill + MCP + sticky mode (`/agentflow on`) are a mandatory install for personal local work on Claude.**  
+> **Default install = download Release (no Go, no git clone).**  
+> Skill + MCP binary + sticky hooks are mandatory for personal local work on Claude.  
 > Hub team MCP is separate.  
-> **Codex CLI:** Hub remote MCP + optional agentflow stdio — see https://hub.stifer.xyz/codex-setup.md (sticky `/agentflow on` is Claude-only).  
-> Updated: 2026-07-23
+> **Codex CLI:** Hub remote MCP + optional agentflow stdio — see https://hub.stifer.xyz/codex-setup.md  
+> Updated: 2026-07-24 · Release **v0.2.1**
 
 ## Bundle rule (all required for local product)
 
 | Component | Role | Required? |
 |-----------|------|-----------|
-| **Skill** `~/.claude/skills/agentflow/` | `/agentflow`, flows, hooks files | **Yes** |
-| **MCP** binary + stdio | `mcp__agentflow__*` tools | **Yes** |
+| **Skill** `~/.claude/skills/agentflow/` | `/agentflow`, flows, hooks (MCP GATE) | **Yes** |
+| **MCP** prebuilt binary + stdio | `mcp__agentflow__*` tools | **Yes** |
 | **Sticky mode hooks** | `/agentflow on` keeps rules on later turns | **Yes** |
 | Hub remote MCP | Team collab tools | Only if team work |
 | soft-sync `config.json` | Auto DAG/events to Hub | Optional |
 
 Incomplete if skill / MCP / hooks are missing any one.
 
-`/agentflow on` is **per machine + per project** (writes `.claude/agentflow/mode.json`). Other devices can have it only after they install the same bundle + hooks.
+## Install (recommended) — one liner
 
----
-
-## Install (Windows)
-
-```powershell
-git clone https://github.com/toustifer/agentflow.git
-cd agentflow
-
-# 1) Skill (includes hooks/)
-$dst = "$env:USERPROFILE\.claude\skills\agentflow"
-New-Item -ItemType Directory -Force -Path $dst | Out-Null
-Copy-Item -Recurse -Force .\skills\agentflow\* $dst
-
-# 2) Binary next to skill
-$bin = "$dst\bin"
-New-Item -ItemType Directory -Force -Path $bin | Out-Null
-go build -o "$bin\agentflow.exe" .\cmd\agentflow\
-```
-
-### MCP (`~/.claude.json` or project `.mcp.json`)
-
-```json
-{
-  "mcpServers": {
-    "agentflow": {
-      "command": "C:\\Users\\YOU\\.claude\\skills\\agentflow\\bin\\agentflow.exe",
-      "args": ["stdio"],
-      "type": "stdio"
-    }
-  }
-}
-```
-
-### Sticky mode hooks (**required** — enables `/agentflow on`)
-
-Needs **Node.js**. Merge into `~/.claude/settings.json` (do **not** wipe existing hooks):
-
-```json
-{
-  "hooks": {
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node C:\\Users\\YOU\\.claude\\skills\\agentflow\\hooks\\mode-inject.js",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "node C:\\Users\\YOU\\.claude\\skills\\agentflow\\hooks\\statusline.js",
-    "refreshInterval": 5
-  }
-}
-```
-
-Replace `YOU` with the real Windows username. Use absolute paths.
-
----
-
-## Install (macOS / Linux)
+### macOS / Linux
 
 ```bash
-git clone https://github.com/toustifer/agentflow.git
-cd agentflow
-
-mkdir -p ~/.claude/skills/agentflow
-cp -R skills/agentflow/. ~/.claude/skills/agentflow/
-
-mkdir -p ~/.claude/skills/agentflow/bin
-go build -o ~/.claude/skills/agentflow/bin/agentflow ./cmd/agentflow/
+curl -fsSL https://raw.githubusercontent.com/toustifer/agentflow/master/scripts/install.sh | bash
 ```
+
+With auto MCP config write:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/toustifer/agentflow/master/scripts/install.sh \
+  | VERSION=v0.2.1 bash -s -- --write-config
+```
+
+### Windows (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/toustifer/agentflow/master/scripts/install.ps1 | iex
+```
+
+Then merge sticky hooks printed by the script into `~/.claude/settings.json` (do **not** wipe other hooks), fully restart Claude Code.
+
+## What the installer does
+
+1. Downloads `skill.tgz` + platform binary from  
+   https://github.com/toustifer/agentflow/releases/tag/v0.2.1  
+2. Installs to `~/.claude/skills/agentflow/` (+ `bin/agentflow`)  
+3. Verifies **MCP GATE** is present in `hooks/mode-lib.js`  
+4. Prints (or writes) `mcpServers.agentflow` with `args: ["stdio"]`
+
+## Manual download
+
+| Asset | Platform |
+|-------|----------|
+| `skill.tgz` | all (required) |
+| `agentflow-darwin-arm64` | Apple Silicon |
+| `agentflow-darwin-amd64` | Intel Mac |
+| `agentflow-linux-amd64` | Linux x64 |
+| `agentflow-windows-amd64.exe` | Windows x64 |
+
+Release page: https://github.com/toustifer/agentflow/releases/tag/v0.2.1
+
+### MCP config example (macOS)
 
 ```json
 {
@@ -109,7 +76,7 @@ go build -o ~/.claude/skills/agentflow/bin/agentflow ./cmd/agentflow/
 }
 ```
 
-`~/.claude/settings.json` hooks:
+### Sticky hooks (**required**)
 
 ```json
 {
@@ -119,7 +86,7 @@ go build -o ~/.claude/skills/agentflow/bin/agentflow ./cmd/agentflow/
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/skills/agentflow/hooks/mode-inject.js",
+            "command": "node /Users/YOU/.claude/skills/agentflow/hooks/mode-inject.js",
             "timeout": 5
           }
         ]
@@ -128,30 +95,42 @@ go build -o ~/.claude/skills/agentflow/bin/agentflow ./cmd/agentflow/
   },
   "statusLine": {
     "type": "command",
-    "command": "node ~/.claude/skills/agentflow/hooks/statusline.js",
+    "command": "node /Users/YOU/.claude/skills/agentflow/hooks/statusline.js",
     "refreshInterval": 5
   }
 }
 ```
 
+Use absolute paths. Windows: `...\bin\agentflow.exe` and `node C:\Users\YOU\.claude\skills\agentflow\hooks\...`.
+
 ---
 
 ## Verify (all must pass)
 
-1. Restart Claude Code  
-2. `/mcp` → agentflow **connected**  
-3. `/agentflow` → skill loads  
-4. `/agentflow on` → mode on (project gets `.claude/agentflow/mode.json`)  
-5. `/agentflow status` → enabled  
-6. Later normal messages still follow agentflow rules (sticky)  
+**Three layers — do not mix them up:**
+
+| Layer | Check | Enough for work? |
+|-------|--------|------------------|
+| Config | `mcpServers.agentflow` in `~/.claude.json` | No |
+| UI / process | `/mcp` lists `agentflow` and **not failed** | Required for user |
+| **Session tools** | Model can call `mcp__agentflow__flow_ping` this turn | **Yes — only this** |
+
+`claude mcp list` Connected, `agentflow:on` in statusline, or Bash→stdio writing sqlite do **not** count as MCP OK.
+
+1. Fully quit and restart Claude Code  
+2. `/mcp` → agentflow **listed and not failed**  
+3. In-session: `mcp__agentflow__flow_ping` succeeds  
+4. `grep -n "MCP GATE" ~/.claude/skills/agentflow/hooks/mode-lib.js` hits  
+5. `/agentflow on` → statusline may show `MCP:cfg|missing|broken`  
+6. If MCP tools missing: **stop**; do **not** Bash/JSON-RPC/sqlite around the engine  
 7. `/agentflow off` when done  
 
 | Symptom | Fix |
 |---------|-----|
-| No `/agentflow` | Skill not copied |
-| No tools | MCP path/binary wrong |
-| `on` does nothing / not sticky | hooks missing or wrong path in settings.json |
-| No Node | Install Node 18+ for hooks |
+| No `/agentflow` | Re-run install / extract `skill.tgz` |
+| No tools / `/mcp` failed | Wrong binary path; need `args:["stdio"]`; restart |
+| No `MCP GATE` grep | Old skill — reinstall v0.2.1+ |
+| Agent uses Bash + stdio | **Invalid** while mode on — fix MCP |
 
 ---
 
@@ -168,13 +147,23 @@ See https://hub.stifer.xyz/agent-setup.md
 
 ---
 
+## Developer-only (source build)
+
+```bash
+git clone https://github.com/toustifer/agentflow.git && cd agentflow
+go build -o ~/.claude/skills/agentflow/bin/agentflow ./cmd/agentflow/
+# publishers: VERSION=v0.2.1 bash scripts/build-release.sh
+```
+
 ## Summary
 
 ```text
-Install agentflow = skill + MCP binary + sticky hooks (/agentflow on)
+Install agentflow = download skill.tgz + platform binary + sticky hooks
 Team tools       = Hub remote MCP (extra)
 Auto board       = soft-sync JWT file (extra)
+Do NOT          = require go build for end users; Bash-bypass when MCP missing
 ```
 
 Master: https://hub.stifer.xyz/agent-setup.md  
-Repo detail: `skills/agentflow/SETUP.md` in https://github.com/toustifer/agentflow
+Repo: https://github.com/toustifer/agentflow  
+Release: https://github.com/toustifer/agentflow/releases/tag/v0.2.1
