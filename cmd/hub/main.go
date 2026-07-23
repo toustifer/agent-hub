@@ -16,10 +16,11 @@ import (
 	"github.com/stifer/agent-hub/internal/hub/service"
 	"github.com/stifer/agent-hub/internal/middleware"
 	"github.com/stifer/agent-hub/internal/server"
+	"github.com/stifer/agent-hub/internal/version"
 )
 
 func main() {
-	fmt.Println("agent-hub starting...")
+	fmt.Printf("agent-hub starting... %s\n", version.String())
 
 	cfg, err := config.Load()
 	if err != nil {
@@ -37,6 +38,12 @@ func main() {
 	defer pool.Close()
 
 	svc := service.New(client, pool)
+	// One-shot: migrate legacy hand-filled codes → 4-char short codes + 90d aliases
+	if n, err := svc.EnsureShortBusinessCodes(ctx); err != nil {
+		log.Printf("EnsureShortBusinessCodes: %v", err)
+	} else if n > 0 {
+		log.Printf("EnsureShortBusinessCodes: reassigned %d team code(s)", n)
+	}
 	mw := middleware.New(pool)
 	h := handler.New(svc, cfg.JWTSecret)
 	srv := server.New(mw, h, cfg)

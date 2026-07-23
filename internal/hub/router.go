@@ -1,63 +1,81 @@
 package hub
 
 import (
-	"net/http/httputil"
-	"net/url"
+	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stifer/agent-hub/internal/config"
 	"github.com/stifer/agent-hub/internal/hub/handler"
+	hubmcp "github.com/stifer/agent-hub/internal/mcp"
 	"github.com/stifer/agent-hub/internal/middleware"
 )
 
+func publicBaseURL() string {
+	base := strings.TrimRight(os.Getenv("HUB_PUBLIC_URL"), "/")
+	if base == "" {
+		base = "https://hub.stifer.xyz"
+	}
+	return base
+}
+
 func RegisterRoutes(r *gin.Engine, mw *middleware.Middleware, h *handler.Handler, cfg *config.Config) {
+	base := publicBaseURL()
+
 	r.GET("/setup", func(c *gin.Context) { c.File("setup.html") })
 	// Generate unique business code — returns "siruoning" or "siruoning-a3f8" if taken
 	r.POST("/v1/hub/businesses/generate-code", h.GenerateBusinessCode)
-	// MCP OAuth metadata — tells Claude Code how to authenticate
+
+	// MCP OAuth metadata — tells Claude Code how to authenticate (issuer from env)
 	r.GET("/.well-known/oauth-authorization-server", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"issuer":                                "https://hub.stifer.xyz",
-			"authorization_endpoint":                "https://hub.stifer.xyz/v1/hub/oauth/authorize",
-			"token_endpoint":                        "https://hub.stifer.xyz/v1/hub/oauth/device/token",
-			"registration_endpoint":                 "https://hub.stifer.xyz/v1/hub/oauth/register",
-			"response_types_supported":              []string{"code"},
-			"grant_types_supported":                 []string{"authorization_code"},
-			"token_endpoint_auth_methods_supported": []string{"none"},
+			"issuer":                                 base,
+			"authorization_endpoint":                 base + "/v1/hub/oauth/authorize",
+			"token_endpoint":                         base + "/v1/hub/oauth/device/token",
+			"registration_endpoint":                  base + "/v1/hub/oauth/register",
+			"device_authorization_endpoint":          base + "/v1/hub/oauth/device/authorize",
+			"response_types_supported":               []string{"code"},
+			"grant_types_supported":                  []string{"authorization_code", "urn:ietf:params:oauth:grant-type:device_code"},
+			"token_endpoint_auth_methods_supported":  []string{"none"},
+			"code_challenge_methods_supported":       []string{"S256", "plain"},
+			"scopes_supported":                       []string{"openid", "profile", "mcp"},
 		})
 	})
-	// OAuth dynamic client registration (RFC 7591)
-	r.POST("/v1/hub/oauth/register", func(c *gin.Context) {
-		c.JSON(201, gin.H{
-			"client_id":                  "agent-hub-mcp",
-			"client_name":                "Agent Hub MCP Client",
-			"redirect_uris":              []string{"http://localhost:0/callback"},
-			"token_endpoint_auth_method": "none",
-			"grant_types":                []string{"urn:ietf:params:oauth:grant-type:device_code"},
-			"response_types":             []string{"code"},
-			"client_id_issued_at":        0,
-		})
-	})
+	// OAuth dynamic client registration (RFC 7591) — persist client when possible
+	r.POST("/v1/hub/oauth/register", h.OAuthRegister)
+
 	r.POST("/v1/hub/oauth/device/authorize", h.OAuthDeviceAuthorize)
 	r.POST("/v1/hub/oauth/device/token", h.OAuthDeviceToken)
 	// Auth code → device flow bridge: redirect browser to device approval page with generated code
 	r.GET("/v1/hub/oauth/authorize", h.OAuthAuthorizeRedirect)
-	// OAuth device confirmation (existing, user clicks in browser)
-	r.GET("/v1/hub/auth/device/confirm", h.DeviceConfirm)
-	r.POST("/v1/hub/auth/device/confirm", h.DeviceConfirm)
-	mcpTarget, _ := url.Parse("http://127.0.0.1:9001")
-	r.Any("/mcp", func(c *gin.Context) { httputil.NewSingleHostReverseProxy(mcpTarget).ServeHTTP(c.Writer, c.Request) })
-	r.Any("/mcp/*path", func(c *gin.Context) { c.Request.URL.Path = "/" + c.Param("path"); httputil.NewSingleHostReverseProxy(mcpTarget).ServeHTTP(c.Writer, c.Request) })
+
+	// In-process Streamable HTTP MCP (official go-sdk). Replaces reverse-proxy to :9001.
+	mcpHub := hubmcp.New(h.Svc, cfg.JWTSecret)
+	mcpHandler := mcpHub.HTTPHandler()
+	r.Any("/mcp", gin.WrapH(mcpHandler))
+	r.Any("/mcp/*path", gin.WrapH(mcpHandler))
+
 	r.POST("/v1/hub/auth/register", h.Register)
 	r.POST("/v1/hub/auth/login", h.Login)
+	r.GET("/v1/hub/auth/verify-email", h.VerifyEmail)
+	r.POST("/v1/hub/auth/verify-email", h.VerifyEmail)
+	r.POST("/v1/hub/auth/resend-verification", h.ResendVerification)
 	r.POST("/v1/hub/auth/device", h.DeviceAuth)
 	r.GET("/healthz", h.Health)
+	r.GET("/health", h.Health)
+	r.GET("/version", h.Version)
 	r.GET("/v1/hub/auth/device/token", h.DeviceToken)
+
 	userAuth := r.Group("/v1/hub")
 	userAuth.Use(mw.JWT(cfg.JWTSecret))
 	{
+		// Device confirm requires a real logged-in user; JWT re-signed on confirm
+		userAuth.GET("/auth/device/confirm", h.DeviceConfirm)
+		userAuth.POST("/auth/device/confirm", h.DeviceConfirm)
 		userAuth.GET("/me/businesses", h.GetMyBusinesses)
 		userAuth.POST("/businesses/:code/join", h.JoinBusiness)
+		userAuth.POST("/businesses/:code/link-requests", h.CreateLinkRequest)
+		userAuth.POST("/invites/accept", h.AcceptInvite)
 	}
 
 	admin := r.Group("/v1/hub")
@@ -66,12 +84,21 @@ func RegisterRoutes(r *gin.Engine, mw *middleware.Middleware, h *handler.Handler
 		admin.POST("/businesses", h.CreateBusiness)
 		admin.GET("/businesses", h.ListBusinesses)
 		admin.PUT("/businesses/:id", h.UpdateBusiness)
+		admin.PATCH("/businesses/:code/profile", h.PatchBusinessProfile)
 		admin.GET("/workers", h.ListWorkers)
 		admin.GET("/locks", h.ListActiveLocks)
 		admin.GET("/events", h.ListEvents)
+		admin.POST("/events", h.AppendEvent)
 		admin.GET("/events/stream", h.StreamEvents)
 		admin.GET("/playbooks/:id", h.GetPlaybookByID)
 		admin.GET("/playbooks/search", h.SearchPlaybooks)
+		// Team docs + worker templates (collab sync v0.2)
+		admin.POST("/businesses/:code/docs", h.UpsertTeamDoc)
+		admin.GET("/businesses/:code/docs", h.ListTeamDocs)
+		admin.GET("/businesses/:code/docs/:key", h.GetTeamDoc)
+		admin.POST("/businesses/:code/worker-templates", h.PublishWorkerTemplate)
+		admin.GET("/businesses/:code/worker-templates", h.ListWorkerTemplates)
+		admin.GET("/businesses/:code/worker-templates/:worker_id", h.GetWorkerTemplate)
 		admin.POST("/repos/:code", h.AddRepo)
 		admin.GET("/repos/:code", h.ListRepos)
 		admin.DELETE("/repos/:id", h.DeleteRepo)
@@ -84,6 +111,18 @@ func RegisterRoutes(r *gin.Engine, mw *middleware.Middleware, h *handler.Handler
 		admin.GET("/community/workers/:id/reviews", h.ListCommunityWorkerReviews)
 		admin.POST("/community/workers/:id/reviews", h.AddCommunityWorkerReview)
 		admin.POST("/businesses/:code/invite", h.InviteMember)
+		admin.GET("/businesses/:code/invites", h.ListInvites)
+		admin.POST("/businesses/:code/invites/:id/revoke", h.RevokeInvite)
+		admin.GET("/businesses/:code/members", h.ListMembers)
+		admin.GET("/businesses/:code/link-requests", h.ListLinkRequests)
+		admin.POST("/businesses/:code/link-requests/:id/review", h.ReviewLinkRequest)
+		// Branch index under JWT group only (middleware accepts API key via tryAPIKey).
+		// Do not also register under worker group — gin panics on duplicate paths.
+		admin.GET("/repos/:code/branches", h.ListBranches)
+		admin.POST("/repos/:code/branches/report", h.ReportBranches)
+		admin.POST("/repos/:code/branches/bind", h.BindBranch)
+		admin.POST("/repos/:code/branches/unbind", h.UnbindBranch)
+		admin.POST("/repos/:code/branches/refresh", h.RefreshBranches)
 	}
 
 	worker := r.Group("/v1/hub")
@@ -95,7 +134,7 @@ func RegisterRoutes(r *gin.Engine, mw *middleware.Middleware, h *handler.Handler
 		worker.POST("/locks/renew", h.RenewLock)
 		worker.POST("/locks/release", h.ReleaseLock)
 		worker.POST("/playbooks", h.CreatePlaybook)
-		worker.POST("/events", h.AppendEvent)
+		// POST /events only on JWT group (API key via tryAPIKey in mw.JWT)
 		worker.POST("/sync/workers", h.SyncWorkers)
 	}
 }

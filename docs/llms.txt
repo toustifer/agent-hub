@@ -1,0 +1,39 @@
+# Agent Hub
+
+> Multi-agent collaboration hub: teams, membership, branch index, locks, playbooks.
+> Base: https://hub.stifer.xyz
+> Primary MCP: https://hub.stifer.xyz/mcp (Streamable HTTP in Go process, OAuth/JWT)
+> Updated: 2026-07-22
+
+## AI-oriented docs (read these first)
+
+- https://hub.stifer.xyz/mcp.md — full MCP setup + tool auth matrix (**remote-first**)
+- https://hub.stifer.xyz/sync-contract.md — **what fields sync** agentflow→Hub (content first)
+- https://hub.stifer.xyz/agentflow-alignment.md — Hub ↔ agentflow tab matrix, gaps, roadmap
+- https://hub.stifer.xyz/llms.txt — this file
+- https://hub.stifer.xyz/setup — human install page
+
+## Product facts agents must respect
+
+1. **Primary path:** remote MCP `type: http` → `https://hub.stifer.xyz/mcp` with OAuth or Bearer JWT.
+2. Human tools: invite / branch / dag / list_* via JWT membership. No API key required.
+3. Machine path (optional): `X-API-Key` + `X-Business-Code` for heartbeat/locks/events/playbooks.
+4. Local Node `mcp-server/index.js` is **legacy** only.
+5. agentflow soft-sync is **REST + JWT only** — does not require Hub MCP or Node bridge.
+
+## Quick start for agents
+
+```json
+{
+  "mcpServers": {
+    "hub": {
+      "type": "http",
+      "url": "https://hub.stifer.xyz/mcp"
+    }
+  }
+}
+```
+
+Then complete Host OAuth (or `hub_login` device flow) → `hub_list_my_businesses` → branch/dag tools.
+
+Full procedure: https://hub.stifer.xyz/mcp.md

@@ -3,10 +3,18 @@ import { createRouter, createWebHistory } from 'vue-router'
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    { path: '/', name: 'Landing', component: () => import('@/views/Landing.vue') },
     { path: '/login', name: 'Login', component: () => import('@/views/Login.vue') },
+    { path: '/verify-email', name: 'VerifyEmail', component: () => import('@/views/VerifyEmail.vue') },
     { path: '/auth/device', name: 'DeviceAuth', component: () => import('@/views/DeviceAuth.vue') },
-    { path: '/', name: 'Dashboard', component: () => import('@/views/Dashboard.vue'), meta: { requiresAuth: true } },
-    { path: '/team/:code', name: 'TeamPage', component: () => import('@/views/TeamPage.vue'), meta: { requiresAuth: true } },
+    { path: '/invite/accept', name: 'InviteAccept', component: () => import('@/views/InviteAccept.vue') },
+    { path: '/app', name: 'Dashboard', component: () => import('@/views/Dashboard.vue'), meta: { requiresAuth: true } },
+    { path: '/dashboard', redirect: '/app' },
+    { path: '/mcp', name: 'OfficialDocs', component: () => import('@/views/OfficialDocs.vue'), meta: { requiresAuth: true } },
+    { path: '/docs', name: 'OfficialDocsAlias', component: () => import('@/views/OfficialDocs.vue'), meta: { requiresAuth: true } },
+    // legacy alias kept for bookmarks
+    { path: '/mcp-setup', redirect: '/docs' },
+    { path: '/team/:slugCode', name: 'TeamPage', component: () => import('@/views/TeamPage.vue'), meta: { requiresAuth: true } },
     { path: '/businesses', name: 'BusinessList', component: () => import('@/views/BusinessList.vue'), meta: { requiresAuth: true } },
     { path: '/workers', name: 'WorkerList', component: () => import('@/views/WorkerList.vue'), meta: { requiresAuth: true } },
     { path: '/locks', name: 'LockList', component: () => import('@/views/LockList.vue'), meta: { requiresAuth: true } },
@@ -20,9 +28,9 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('token')
   if (to.meta.requiresAuth && !token) {
-    next('/login')
+    next({ path: '/login', query: { redirect: to.fullPath } })
   } else if (to.path === '/login' && token) {
-    next('/')
+    next('/app')
   } else {
     next()
   }

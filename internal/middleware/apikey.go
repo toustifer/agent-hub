@@ -35,12 +35,20 @@ func (m *Middleware) APIKey() gin.HandlerFunc {
 		err := m.Pool.QueryRow(c.Request.Context(),
 			`SELECT k.business_id FROM hub.hub_api_keys k
 			 JOIN hub.hub_businesses b ON b.id = k.business_id
-			 WHERE b.code = $1 AND k.key_hash = $2`,
+			 WHERE b.code = $1 AND k.key_hash = $2 AND k.revoked_at IS NULL`,
 			businessCode, hash,
 		).Scan(&bizID)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "invalid api key or business"})
-			return
+			err = m.Pool.QueryRow(c.Request.Context(),
+				`SELECT k.business_id FROM hub.hub_api_keys k
+				 JOIN hub.hub_businesses b ON b.id = k.business_id
+				 WHERE b.code = $1 AND k.key_hash = $2`,
+				businessCode, hash,
+			).Scan(&bizID)
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "invalid api key or business"})
+				return
+			}
 		}
 		c.Set("business_id", bizID)
 		c.Set("business_code", businessCode)

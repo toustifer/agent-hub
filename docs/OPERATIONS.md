@@ -1,127 +1,96 @@
 # 运维手册
 
+生产：`hub.stifer.xyz` → `storyhost` → `/opt/agent-hub`  
+进程：`hub-server`（systemd: `hub-server.service`）→ `:9000`，nginx 反代。
+
+**正规发版流程见 [RELEASE.md](./RELEASE.md)。** 下文为日常运维与应急。
+
 ## 服务管理
 
-agent-hub 作为 systemd 单元运行：
-
 ```bash
-# 状态
-systemctl status sub2api-hub
+ssh storyhost
 
-# 启动 / 停止 / 重启
-sudo systemctl start sub2api-hub
-sudo systemctl stop sub2api-hub
-sudo systemctl restart sub2api-hub
-
-# 日志
-journalctl -u sub2api-hub -f
-tail -f /var/log/sub2api-hub/*.log
+systemctl status hub-server
+systemctl restart hub-server
+systemctl stop hub-server
+journalctl -u hub-server -f
+# 若未挂 unit，进程日志：
+tail -f /var/log/agent-hub.log
 ```
 
-## 部署
+## 健康检查
 
 ```bash
-# 本地构建（需先有 /opt/sub2api-src/backend）
-cd D:\myprogram\agent-hub
-go build -o bin/hub ./cmd/hub
-
-# 上传到服务器
-scp bin/hub root@47.115.134.24:/opt/agent-hub/
-
-# 服务器上
-sudo systemctl restart sub2api-hub
+curl -sS https://hub.stifer.xyz/health
+curl -sS https://hub.stifer.xyz/version
+curl -sS https://hub.stifer.xyz/healthz
 ```
+
+`/health` 与 `/version` 含 `version` / `commit` / `build_time`（ldflags 注入）。
+
+## 部署（推荐）
+
+```bash
+# 1) 构建
+./scripts/build-release.sh v0.2.0
+
+# 2) 部署
+./scripts/deploy-release.sh v0.2.0 storyhost
+```
+
+或：推送 git tag `v0.2.0` → GitHub Actions 产出 Release 附件 → 本机下载后 `deploy-release.sh`。
 
 ## 监控
 
 | 指标 | 来源 | 阈值 |
-|---|---|---|
-| 进程内存 | `ps aux \| grep hub` | < 200MB |
-| CPU | `top -p $(pgrep hub)` | < 50% 平均 |
-| 锁活跃数 | `SELECT count(*) FROM hub.hub_locks WHERE released_at IS NULL AND expires_at > now()` | < 100 |
-| 死 Worker | `SELECT count(*) FROM hub.hub_workers WHERE status = 'offline' AND last_heartbeat_at < now() - interval '5 min'` | < 5 |
-| DB 连接 | pg_stat_activity | < 50 |
+|------|------|------|
+| 进程 | `systemctl is-active hub-server` | active |
+| 版本 | `curl /version` | 与预期 tag 一致 |
+| 内存 | `ps aux \| grep hub-server` | 视负载 |
+| 锁 | `SELECT count(*) FROM hub.hub_locks WHERE …` | 异常堆积 |
+| DB | `pg_stat_activity` | 连接打满 |
 
 ## 备份
 
 ```bash
-# 每日备份 hub schema
-pg_dump -U sub2api -n hub sub2api | gzip > /opt/backup/hub_$(date +%F).sql.gz
-
-# 恢复
-gunzip -c /opt/backup/hub_2026-06-05.sql.gz | psql -U sub2api sub2api
-```
-
-## 升级
-
-```bash
-# 1. 拉新代码
-cd D:\myprogram\agent-hub
-git pull
-
-# 2. 跑 migration（如有）
-psql -U sub2api -d sub2api -f migrations/000X_*.sql
-
-# 3. 重新生成 ent（如 schema 变了）
-go generate ./ent
-
-# 4. 重新构建
-go build -o bin/hub ./cmd/hub
-scp bin/hub root@47.115.134.24:/opt/agent-hub/
-
-# 5. 重启
-ssh root@47.115.134.24 'systemctl restart sub2api-hub'
-
-# 6. 冒烟
-curl https://hub.stifer.xyz/health
+# hub schema
+pg_dump "$HUB_DATABASE_URL" -n hub | gzip > /opt/backup/hub_$(date +%F).sql.gz
 ```
 
 ## 故障恢复
 
-### Hub 挂了
+### 进程挂了
+
 ```bash
-# 1. 看日志
-journalctl -u sub2api-hub -n 100
-
-# 2. 常见原因：
-#    - DB 连接耗尽：重启 sub2api / 检查 pg 连接池
-#    - Redis 挂了：重启 redis-server
-#    - 二进制坏：scp 重新上传
-#    - 端口被占：lsof -i :9000
-
-# 3. 紧急回滚
-sudo systemctl stop sub2api-hub
-scp /opt/backup/hub.bak root@47.115.134.24:/opt/agent-hub/hub
-sudo systemctl start sub2api-hub
+journalctl -u hub-server -n 100
+# 或
+tail -100 /var/log/agent-hub.log
+systemctl restart hub-server
+curl -sS http://127.0.0.1:9000/health
 ```
 
-### 锁死（Worker 崩溃没释放）
+### 回滚二进制
+
 ```bash
-# 等 5 分钟 TTL 自动过期
-# 或者 admin 强制释放
-psql -U sub2api -d sub2api -c \
-  "UPDATE hub.hub_locks SET released_at = now() WHERE id = $1"
+cd /opt/agent-hub
+ls -lt hub-server.bak.* | head
+cp -a hub-server.bak.YYYYMMDDHHMMSS hub-server
+systemctl restart hub-server
 ```
 
-### 死锁（两个 Worker 互相等）
-agent-hub 不支持嵌套锁，hub-boot 会拒绝。出现死锁要查 hub_event 找出冲突链。
+或：`install -m 755 releases/vX.Y.Z/hub-server hub-server && systemctl restart hub-server`
+
+### 锁未释放
+
+等 TTL，或管理员 SQL 标记释放（谨慎）。
 
 ## 安全
 
-- 不要把 admin JWT 写进仓库
-- APIKey 限定 scope（`hub:write` / `hub:read`）
-- 定期 rotate APIKey（每 6 个月）
-- 看 audit log：`SELECT * FROM hub.hub_events ORDER BY created_at DESC LIMIT 100`
-- 监控异常来源 IP
+- `.env` 仅在服务器，勿进 git  
+- 定期轮换 JWT secret / SMTP 授权码 / API Key  
+- 审计：`hub.hub_events`  
 
-## 性能
+## 与旧文档差异
 
-- 单实例 30-50MB 内存
-- 100 并发心跳 < 50ms p99
-- 锁 acquire < 20ms p99
-- 全文搜索 < 100ms p99（10 万 playbook 量级）
-
-不够用时考虑：
-- 水平扩展：多个 agent-hub 进程（同 DB，PG 锁保证一致）
-- 读写分离：playbook 读走从库
-- CDN：dashboard 静态资源走 CDN
+旧文中的 `sub2api-hub` 单元名已废弃，现用 **`hub-server`**。  
+路径 `/opt/agent-hub`，二进制名 **`hub-server`**。

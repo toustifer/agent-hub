@@ -1,0 +1,402 @@
+/* Marketing portal — isolated from Element admin */
+.landing-root {
+  --ld-bg: #0a0a0f;
+  --ld-bg-elev: #0f172a;
+  --ld-bg-card: #111827;
+  --ld-border: #1e293b;
+  --ld-text: #e2e8f0;
+  --ld-muted: #94a3b8;
+  --ld-accent: #3ecf8e;
+  --ld-accent-dim: rgba(62, 207, 142, 0.12);
+  --ld-accent-hover: #34b87a;
+  min-height: 100vh;
+  background: var(--ld-bg);
+  color: var(--ld-text);
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.55;
+}
+
+.landing-root * {
+  box-sizing: border-box;
+}
+
+.landing-root a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.ld-wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Nav */
+.ld-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(12px);
+  background: rgba(10, 10, 15, 0.82);
+  border-bottom: 1px solid var(--ld-border);
+}
+
+.ld-nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 64px;
+}
+
+.ld-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+
+.ld-brand img {
+  height: 32px;
+  width: auto;
+}
+
+.ld-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 14px;
+  color: var(--ld-muted);
+}
+
+.ld-nav-links a:hover {
+  color: var(--ld-text);
+}
+
+.ld-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ld-lang {
+  background: transparent;
+  border: 1px solid var(--ld-border);
+  color: var(--ld-muted);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ld-lang:hover {
+  color: var(--ld-text);
+  border-color: #334155;
+}
+
+/* Buttons */
+.ld-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.ld-btn-primary {
+  background: var(--ld-accent);
+  color: #042f1a;
+}
+
+.ld-btn-primary:hover {
+  background: var(--ld-accent-hover);
+}
+
+.ld-btn-ghost {
+  background: transparent;
+  border-color: var(--ld-border);
+  color: var(--ld-text);
+}
+
+.ld-btn-ghost:hover {
+  border-color: #475569;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ld-btn-lg {
+  padding: 14px 22px;
+  font-size: 15px;
+}
+
+/* Hero */
+.ld-hero {
+  padding: 88px 0 72px;
+  text-align: center;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(62, 207, 142, 0.18), transparent 60%),
+    var(--ld-bg);
+}
+
+.ld-hero h1 {
+  margin: 0 auto 18px;
+  max-width: 820px;
+  font-size: clamp(32px, 5vw, 52px);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  font-weight: 750;
+}
+
+.ld-hero p {
+  margin: 0 auto 32px;
+  max-width: 640px;
+  color: var(--ld-muted);
+  font-size: 17px;
+}
+
+.ld-hero-cta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Sections */
+.ld-section {
+  padding: 72px 0;
+}
+
+.ld-section-alt {
+  background: var(--ld-bg-elev);
+  border-top: 1px solid var(--ld-border);
+  border-bottom: 1px solid var(--ld-border);
+}
+
+.ld-section h2 {
+  margin: 0 0 12px;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+
+.ld-section-lead {
+  margin: 0 auto 40px;
+  max-width: 560px;
+  text-align: center;
+  color: var(--ld-muted);
+  font-size: 15px;
+}
+
+/* Pillars */
+.ld-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.ld-card {
+  background: var(--ld-bg-card);
+  border: 1px solid var(--ld-border);
+  border-radius: 14px;
+  padding: 20px 18px;
+}
+
+.ld-card h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: var(--ld-accent);
+}
+
+.ld-card p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ld-muted);
+}
+
+/* How steps */
+.ld-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.ld-step {
+  position: relative;
+  padding: 22px 20px;
+  border-radius: 14px;
+  border: 1px solid var(--ld-border);
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.ld-step-num {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--ld-accent-dim);
+  color: var(--ld-accent);
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.ld-step h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.ld-step p {
+  margin: 0;
+  color: var(--ld-muted);
+  font-size: 13.5px;
+}
+
+/* Dev block */
+.ld-dev {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.ld-dev-copy h2 {
+  text-align: left;
+  margin-bottom: 12px;
+}
+
+.ld-dev-copy p {
+  margin: 0;
+  color: var(--ld-muted);
+  font-size: 15px;
+}
+
+.ld-code {
+  position: relative;
+  background: #020617;
+  border: 1px solid var(--ld-border);
+  border-radius: 12px;
+  padding: 18px 16px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  color: #cbd5e1;
+  white-space: pre;
+  line-height: 1.55;
+}
+
+.ld-code-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #1e293b;
+  color: #94a3b8;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.ld-code-btn:hover {
+  color: #e2e8f0;
+}
+
+/* Enterprise */
+.ld-enterprise {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.ld-ent-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--ld-border);
+  background: var(--ld-bg-card);
+  font-size: 14px;
+}
+
+.ld-ent-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--ld-accent);
+  flex-shrink: 0;
+}
+
+/* Final CTA */
+.ld-final {
+  text-align: center;
+  padding: 80px 0;
+}
+
+.ld-final h2 {
+  margin: 0 0 12px;
+  font-size: 30px;
+}
+
+.ld-final p {
+  margin: 0 auto 28px;
+  max-width: 480px;
+  color: var(--ld-muted);
+}
+
+.ld-final-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Footer */
+.ld-footer {
+  border-top: 1px solid var(--ld-border);
+  padding: 28px 0 40px;
+  color: var(--ld-muted);
+  font-size: 13px;
+}
+
+.ld-footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.ld-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.ld-footer-links a:hover {
+  color: var(--ld-text);
+}
+
+@media (max-width: 800px) {
+  .ld-nav-links {
+    display: none;
+  }
+
+  .ld-dev {
+    grid-template-columns: 1fr;
+  }
+
+  .ld-hero {
+    padding: 56px 0 48px;
+  }
+}

@@ -42,28 +42,42 @@ Agent Hub (hub.stifer.xyz)
 
 ## 快速开始
 
-### 用户（接入 Agent Hub）
+### 用户 / AI（接入 Agent Hub MCP）
 
-**Step 1**: 在项目根目录创建 `.mcp.json`：
+**给 AI 读的完整教程（推荐粘贴）：** [hub.stifer.xyz/mcp.md](https://hub.stifer.xyz/mcp.md) · [llms.txt](https://hub.stifer.xyz/llms.txt)  
+**同步内容契约（先定字段）：** [sync-contract.md](https://hub.stifer.xyz/sync-contract.md) · [`docs/SYNC_CONTRACT.md`](./docs/SYNC_CONTRACT.md)  
+**Hub ↔ agentflow 对齐矩阵：** [agentflow-alignment.md](https://hub.stifer.xyz/agentflow-alignment.md) · 源文件 [`docs/AGENTFLOW_ALIGNMENT.md`](./docs/AGENTFLOW_ALIGNMENT.md)
+
+人侧主路径是 **stdio MCP + `hub_login` JWT**，**不需要 API Key**。
+
+**Step 1**: 克隆并安装 MCP 服务
+
+```bash
+git clone https://github.com/toustifer/agent-hub.git
+cd agent-hub/mcp-server && npm install
+```
+
+**Step 2**: 项目根目录 `.mcp.json`（把绝对路径换成你的 `index.js`）：
 
 ```json
 {
   "mcpServers": {
     "hub": {
-      "type": "http",
-      "url": "https://hub.stifer.xyz/mcp"
+      "command": "node",
+      "args": ["ABS_PATH/agent-hub/mcp-server/index.js"],
+      "env": {
+        "HUB_API_URL": "https://hub.stifer.xyz"
+      }
     }
   }
 }
 ```
 
-**Step 2**: 把 `.mcp.json` 加入 `.gitignore`（每台机器各自生成）
+**Step 3**: 重启 Claude Code，`/mcp` 见 `hub connected` → 调用 `hub_login` 浏览器批准 → `hub_list_my_businesses`
 
-**Step 3**: 重启 Claude Code，`/mcp` 验证连接
+**Step 4**: Dashboard 建团 / 记下 `business_code`；可用 `hub_list_branches` 等 JWT 工具
 
-**Step 4**: 在 Claude Code 中运行 `/agent-company init` 自动注册项目
-
-详细安装指南：[hub.stifer.xyz/setup](https://hub.stifer.xyz/setup)
+人读安装页：[hub.stifer.xyz/setup](https://hub.stifer.xyz/setup)
 
 ### 开发者（部署自己的 Hub）
 
@@ -135,3 +149,7 @@ Claude Code → 发现 OAuth 元数据 → 动态客户端注册
 ## License
 
 MIT
+
+## Release / deploy
+
+See [docs/RELEASE.md](docs/RELEASE.md) for semver tags, CI artifacts, and `scripts/deploy-release.sh`.

@@ -4,6 +4,11 @@
   "description": "MCP Server for agent-hub — Worker heartbeat, distributed lock, event logging",
   "type": "module",
   "main": "index.js",
+  "scripts": {
+    "stdio": "node index.js",
+    "http": "node http-server.js",
+    "start": "node index.js"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
   }

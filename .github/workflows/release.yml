@@ -1,0 +1,87 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g. v0.2.0) — only for manual runs without a git tag"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Resolve version
+        id: ver
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            V="${{ github.ref_name }}"
+          elif [[ -n "${{ inputs.version }}" ]]; then
+            V="${{ inputs.version }}"
+          else
+            V="v$(tr -d '[:space:]' < VERSION)-$(git rev-parse --short HEAD)"
+          fi
+          [[ "$V" == v* ]] || V="v$V"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Building $V"
+
+      - name: Test
+        run: go test ./internal/... -count=1
+
+      - name: Build release artifacts
+        run: |
+          chmod +x scripts/build-release.sh
+          ./scripts/build-release.sh "${{ steps.ver.outputs.version }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-hub-${{ steps.ver.outputs.version }}-linux-amd64
+          path: dist/release/agent-hub-${{ steps.ver.outputs.version }}-linux-amd64.tar.gz
+
+      - name: Create GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/release/agent-hub-${{ steps.ver.outputs.version }}-linux-amd64.tar.gz
+          generate_release_notes: true
+          body: |
+            ## agent-hub ${{ steps.ver.outputs.version }}
+
+            ### Install / deploy
+            ```bash
+            # on a machine with SSH to production:
+            ./scripts/deploy-release.sh ${{ steps.ver.outputs.version }} storyhost
+            ```
+
+            ### Smoke
+            ```bash
+            curl -sS https://hub.stifer.xyz/health
+            curl -sS https://hub.stifer.xyz/version
+            ```
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

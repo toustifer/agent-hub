@@ -1,0 +1,37 @@
+# Agent Hub
+
+> Multi-agent collaboration hub: teams, membership, branch index, locks, playbooks.
+> Base: https://hub.stifer.xyz
+
+## AI-oriented docs (read these first)
+
+- https://hub.stifer.xyz/mcp.md — full MCP setup + tool auth matrix (JWT-first)
+- https://hub.stifer.xyz/sync-contract.md — **what fields sync** agentflow→Hub (content first)
+- https://hub.stifer.xyz/agentflow-alignment.md — Hub ↔ agentflow tab matrix, gaps, roadmap
+- https://hub.stifer.xyz/llms.txt — this file
+- https://hub.stifer.xyz/setup — human install page
+
+## Product facts agents must respect
+
+1. Human path: MCP stdio server + `hub_login` JWT. No API key required for invite/branch/dag.
+2. Machine path (optional): `X-API-Key` + `X-Business-Code` only for heartbeat/locks/events/playbooks.
+3. Create-team does not return api_key by default.
+4. Prefer clone https://github.com/toustifer/agent-hub and run `mcp-server/index.js` via project `.mcp.json`.
+5. Do not use `https://hub.stifer.xyz/mcp` HTTP MCP unless docs later mark it healthy.
+
+## Quick start for agents
+
+```text
+1. Write project .mcp.json:
+   { "mcpServers": { "hub": {
+       "command": "node",
+       "args": ["<abs>/agent-hub/mcp-server/index.js"],
+       "env": { "HUB_API_URL": "https://hub.stifer.xyz" }
+   }}}
+2. npm install inside mcp-server/
+3. hub_login() → browser Approve → hub_login({code})
+4. hub_list_my_businesses → pick business_code
+5. hub_list_branches / hub_report_branches with JWT
+```
+
+Full procedure: https://hub.stifer.xyz/mcp.md

@@ -6,13 +6,15 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
 type createBusinessReq struct {
-	Code        string `json:"code" binding:"required,min=2,max=64"`
+	// Code is ignored when present — server always assigns a 4-char short code.
+	Code        string `json:"code"`
 	Name        string `json:"name" binding:"required,min=1,max=128"`
 	RepoURL     string `json:"repo_url"`
 	Description string `json:"description"`
@@ -32,38 +34,59 @@ func (h *Handler) CreateBusiness(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": err.Error()})
 		return
 	}
-	biz, err := h.Svc.CreateBusiness(c.Request.Context(), req.Code, req.Name, req.RepoURL, 0, req.Description)
+
+	userIDRaw, ok := c.Get("user_id")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "login required"})
+		return
+	}
+	uid, ok := userIDRaw.(int64)
+	if !ok || uid <= 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "invalid user"})
+		return
+	}
+
+	// Always auto-generate short code (ignore client-supplied code).
+	biz, err := h.Svc.CreateBusiness(c.Request.Context(), "", req.Name, req.RepoURL, uid, req.Description)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": err.Error()})
 		return
 	}
 
-	userID, _ := c.Get("user_id")
-	if uid, ok := userID.(int64); ok && uid > 0 {
-		_, err := h.Svc.Pool.Exec(c.Request.Context(),
-			"INSERT INTO hub.hub_memberships (user_id, business_id, role, created_at) VALUES ($1, $2, 'admin', now()) ON CONFLICT DO NOTHING",
-			uid, biz.ID)
+	_, err = h.Svc.Pool.Exec(c.Request.Context(),
+		"INSERT INTO hub.hub_memberships (user_id, business_id, role, created_at) VALUES ($1, $2, 'owner', now()) ON CONFLICT DO NOTHING",
+		uid, biz.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "failed to add ownership"})
+		return
+	}
+
+	// Default: no API key. Human path is JWT/MCP login + membership.
+	// Opt-in machine key: HUB_CREATE_API_KEY=1
+	out := gin.H{
+		"business": biz,
+		"role":     "owner",
+		"note":     "use Web login or MCP hub_login (JWT) to manage this team; API key is optional for CI/workers",
+	}
+	if os.Getenv("HUB_CREATE_API_KEY") == "1" {
+		apiKey, err := genAPIKey()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "failed to add membership"})
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "failed to generate api key"})
 			return
 		}
+		hash := sha256.Sum256([]byte(apiKey))
+		_, err = h.Svc.Pool.Exec(c.Request.Context(),
+			"INSERT INTO hub.hub_api_keys (business_id, key_hash, label, created_at) VALUES ($1, $2, 'default', now()) ON CONFLICT DO NOTHING",
+			biz.ID, hex.EncodeToString(hash[:]))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "failed to create api key"})
+			return
+		}
+		out["api_key"] = apiKey
+		out["note"] = "store api_key securely; it is shown only once (HUB_CREATE_API_KEY=1)"
 	}
 
-	apiKey, err := genAPIKey()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "failed to generate api key"})
-		return
-	}
-	hash := sha256.Sum256([]byte(apiKey))
-	_, err = h.Svc.Pool.Exec(c.Request.Context(),
-		"INSERT INTO hub.hub_api_keys (business_id, key_hash, created_at) VALUES ($1, $2, now()) ON CONFLICT DO NOTHING",
-		biz.ID, hex.EncodeToString(hash[:]))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "failed to create api key"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": gin.H{"business": biz, "api_key": apiKey}})
+	c.JSON(http.StatusOK, gin.H{"data": out})
 }
 
 func (h *Handler) ListBusinesses(c *gin.Context) {
@@ -98,6 +121,91 @@ func (h *Handler) UpdateBusiness(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": "ok"})
 }
 
+type patchBusinessProfileReq struct {
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+}
+
+// PatchBusinessProfile renames a team (name/description only). Code is immutable.
+// Route: PATCH /v1/hub/businesses/:code/profile
+func (h *Handler) PatchBusinessProfile(c *gin.Context) {
+	code := c.Param("code")
+	bizID, role, ok := h.RequireMembership(c, code)
+	if !ok {
+		return
+	}
+	if role != "owner" && role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"code": 403, "message": "only owners/admins can rename the team"})
+		return
+	}
+	var req patchBusinessProfileReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": err.Error()})
+		return
+	}
+	if req.Name == nil && req.Description == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "name or description required"})
+		return
+	}
+	if err := h.Svc.UpdateBusinessProfile(c.Request.Context(), bizID, req.Name, req.Description); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": err.Error()})
+		return
+	}
+	biz, err := h.Svc.GetBusinessByID(c.Request.Context(), bizID)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"data": "ok"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": gin.H{
+		"business":  biz,
+		"team_path": serviceBuildTeamPath(biz.Name, biz.Code),
+	}})
+}
+
+func serviceBuildTeamPath(name, code string) string {
+	// local import-free helper — mirrors service.BuildTeamPath
+	return fmt.Sprintf("/team/%s", teamPathSegment(name, code))
+}
+
+func teamPathSegment(name, code string) string {
+	// keep simple: code always; optional slug prefix
+	slug := sanitizeDisplaySlug(name)
+	if slug == "" {
+		return code
+	}
+	return slug + "-" + code
+}
+
+func sanitizeDisplaySlug(name string) string {
+	var b []rune
+	prevDash := false
+	for _, r := range name {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r > 127 {
+			// letters, digits, or non-ASCII (CJK etc.)
+			if r >= 'A' && r <= 'Z' {
+				r = r + 32
+			}
+			b = append(b, r)
+			prevDash = false
+			continue
+		}
+		if r == ' ' || r == '-' || r == '_' {
+			if len(b) > 0 && !prevDash {
+				b = append(b, '-')
+				prevDash = true
+			}
+		}
+	}
+	// trim dashes
+	for len(b) > 0 && b[0] == '-' {
+		b = b[1:]
+	}
+	for len(b) > 0 && b[len(b)-1] == '-' {
+		b = b[:len(b)-1]
+	}
+	return string(b)
+}
+
 func (h *Handler) GetBusinessByCode(c *gin.Context) {
 	code := c.Param("code")
 	biz, err := h.Svc.GetBusinessByCode(c.Request.Context(), code)
@@ -105,6 +213,7 @@ func (h *Handler) GetBusinessByCode(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": err.Error()})
 		return
 	}
+	c.Header("X-Business-Code-Canonical", biz.Code)
 	c.JSON(http.StatusOK, gin.H{"data": biz})
 }
 
@@ -129,53 +238,59 @@ func (h *Handler) InviteMember(c *gin.Context) {
 		req.Role = "member"
 	}
 
-	biz, err := h.Svc.GetBusinessByCode(c.Request.Context(), code)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "business not found"})
+	bizID, role, ok := h.RequireMembership(c, code)
+	if !ok {
+		return
+	}
+	if role != "admin" && role != "owner" {
+		c.JSON(http.StatusForbidden, gin.H{"code": 403, "message": "only admins can invite members"})
 		return
 	}
 
-	// Check if the inviter is a member
-	var role string
+	rawToken, err := genInviteToken()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "failed to generate invite token"})
+		return
+	}
+	th := hashToken(rawToken)
+
+	// Always persist invite (registered or not). Accept still required.
+	var inviteID int64
 	err = h.Svc.Pool.QueryRow(c.Request.Context(),
-		"SELECT role FROM hub.hub_memberships WHERE user_id=$1 AND business_id=$2",
-		userID, biz.ID,
-	).Scan(&role)
+		`INSERT INTO hub.hub_invites
+		   (business_id, email, role, token_hash, invited_by, status, expires_at)
+		 VALUES ($1, $2, $3, $4, $5, 'pending', now() + interval '7 days')
+		 ON CONFLICT DO NOTHING
+		 RETURNING id`,
+		bizID, req.Email, req.Role, th, userID,
+	).Scan(&inviteID)
 	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"code": 403, "message": "you are not a member of this business"})
-		return
+		// pending unique conflict: revoke old pending and re-insert
+		_, _ = h.Svc.Pool.Exec(c.Request.Context(),
+			`UPDATE hub.hub_invites SET status='revoked', updated_at=now()
+			 WHERE business_id=$1 AND lower(email)=lower($2) AND status='pending'`,
+			bizID, req.Email)
+		err = h.Svc.Pool.QueryRow(c.Request.Context(),
+			`INSERT INTO hub.hub_invites
+			   (business_id, email, role, token_hash, invited_by, status, expires_at)
+			 VALUES ($1, $2, $3, $4, $5, 'pending', now() + interval '7 days')
+			 RETURNING id`,
+			bizID, req.Email, req.Role, th, userID,
+		).Scan(&inviteID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": err.Error()})
+			return
+		}
 	}
 
-	// Find the target user by email
-	var targetUserID int64
-	err = h.Svc.Pool.QueryRow(c.Request.Context(),
-		"SELECT id FROM hub.hub_users WHERE email=$1", req.Email,
-	).Scan(&targetUserID)
-	if err != nil {
-		// User doesn't exist yet — they'll be added when they register and accept
-		c.JSON(http.StatusOK, gin.H{"data": gin.H{
-			"message":    "Invitation recorded. User will be added when they register and join.",
-			"invite_url": "https://hub.stifer.xyz/team/" + code,
-			"email":      req.Email,
-		}})
-		return
-	}
-
-	// Add membership
-	_, err = h.Svc.Pool.Exec(c.Request.Context(),
-		"INSERT INTO hub.hub_memberships (user_id, business_id, role, created_at) VALUES ($1, $2, $3, now()) ON CONFLICT DO NOTHING",
-		targetUserID, biz.ID, req.Role,
-	)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": err.Error()})
-		return
-	}
-
+	inviteURL := publicBaseURL() + "/invite/accept?token=" + rawToken
 	c.JSON(http.StatusOK, gin.H{"data": gin.H{
-		"message":    "Member invited successfully",
+		"message":    "Invitation created. Share the invite_url (token shown only once).",
 		"email":      req.Email,
 		"role":       req.Role,
-		"invite_url": "https://hub.stifer.xyz/team/" + code,
+		"invite_id":  inviteID,
+		"invite_url": inviteURL,
+		"expires_in": "7d",
 	}})
 }
 
