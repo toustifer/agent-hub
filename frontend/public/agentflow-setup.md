@@ -134,17 +134,24 @@ Use absolute paths. Windows: `...\bin\agentflow.exe` and `node C:\Users\YOU\.cla
 
 ---
 
-## Optional: Hub team MCP
+## Optional: Hub team MCP + namespace bind
 
 ```json
 "hub": { "type": "http", "url": "https://hub.stifer.xyz/mcp" }
 ```
 
-### Soft-sync
+### Soft-sync + bind
 
-`hub_export_soft_sync_config` → `~/.agent-hub/config.json`.  
+**One namespace ↔ one Hub team (4-char code, e.g. `z8gw`).**  
+JWT lives in `~/.agent-hub/config.json`; project truth is `namespace.metadata["hub.business_code"]`.
+
+```text
+hub_bind_team({ namespace_id, business_code: "z8gw" })  # or "zhiji-z8gw" → z8gw
+hub_status({ namespace_id })  # source=namespace
+```
+
+Resolve: env → namespace → workdir `.mycompany/hub-client.json` → home.  
 See https://hub.stifer.xyz/agent-setup.md
-
 ---
 
 ## Developer-only (source build)

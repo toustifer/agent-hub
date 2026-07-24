@@ -140,14 +140,28 @@ codex mcp login hub
 
 ---
 
-## Optional: both MCPs + soft-sync
+## Optional: both MCPs + soft-sync + namespace bind
 
-Stack agentflow (full bundle) + hub http.  
+Stack agentflow (full bundle) + hub http.
 
-Soft-sync: after Hub OAuth, `hub_export_soft_sync_config({ "business_code": "<4-char team code>" })` → write `~/.agent-hub/config.json`.  
-`business_code` is the **auto-generated short code** shown on the team card (not the display name).  
+**One workdir / one agentflow namespace ↔ one Hub team (4-char `business_code`, e.g. `z8gw`).**
+
+| Layer | Role |
+|-------|------|
+| `namespace.metadata["hub.business_code"]` | Product truth for this project |
+| `{workdir}/.mycompany/hub-client.json` | Per-repo mirror of code |
+| `~/.agent-hub/config.json` | JWT + **fallback** code only (not multi-project truth) |
+
+Resolve order: `env` → **namespace** → workdir → home.
+
+1. Hub OAuth / `hub_login` → JWT in `~/.agent-hub/config.json`  
+2. Pick 4-char code from team card / `hub_list_my_businesses` (not display name `zhiji`)  
+3. agentflow: `hub_bind_team({ "namespace_id": "<ns>", "business_code": "z8gw" })`  
+   - Also accepts paste `zhiji-z8gw` → stores `z8gw`  
+4. `hub_status({ "namespace_id": "<ns>" })` → `source=namespace`
+
+Home-only soft-sync config is still useful as JWT storage + fallback; durable multi-project bind is **namespace metadata**.  
 Does not replace sticky hooks.
-
 ---
 
 ## Do not
