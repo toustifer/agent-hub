@@ -150,9 +150,9 @@ Stack agentflow (full bundle) + hub http.
 |-------|------|
 | `namespace.metadata["hub.business_code"]` | Product truth for this project |
 | `{workdir}/.mycompany/hub-client.json` | Per-repo mirror of code |
-| `~/.agent-hub/config.json` | JWT + **fallback** code only (not multi-project truth) |
+| `~/.agent-hub/config.json` | **JWT only** (no machine-wide team bind) |
 
-Resolve order: `env` → **namespace** → workdir → home.
+Resolve order: `env` → **namespace** → workdir (**no home team**).
 
 1. Hub OAuth / `hub_login` → JWT in `~/.agent-hub/config.json`  
 2. Pick 4-char code from team card / `hub_list_my_businesses` (not display name `zhiji`)  
@@ -160,7 +160,7 @@ Resolve order: `env` → **namespace** → workdir → home.
    - Also accepts paste `zhiji-z8gw` → stores `z8gw`  
 4. `hub_status({ "namespace_id": "<ns>" })` → `source=namespace`
 
-Home-only soft-sync config is still useful as JWT storage + fallback; durable multi-project bind is **namespace metadata**.  
+Home config is JWT storage only; durable bind is **namespace metadata** only.  
 Does not replace sticky hooks.
 ---
 

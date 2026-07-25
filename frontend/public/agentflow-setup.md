@@ -143,14 +143,14 @@ Use absolute paths. Windows: `...\bin\agentflow.exe` and `node C:\Users\YOU\.cla
 ### Soft-sync + bind
 
 **One namespace ↔ one Hub team (4-char code, e.g. `z8gw`).**  
-JWT lives in `~/.agent-hub/config.json`; project truth is `namespace.metadata["hub.business_code"]`.
+JWT lives in `~/.agent-hub/config.json` (no team there); project truth is `namespace.metadata["hub.business_code"]` only.
 
 ```text
 hub_bind_team({ namespace_id, business_code: "z8gw" })  # or "zhiji-z8gw" → z8gw
 hub_status({ namespace_id })  # source=namespace
 ```
 
-Resolve: env → namespace → workdir `.mycompany/hub-client.json` → home.  
+Resolve: env → namespace → workdir (home team code ignored).  
 See https://hub.stifer.xyz/agent-setup.md
 ---
 
