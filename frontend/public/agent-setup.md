@@ -3,7 +3,7 @@
 > Paste this whole file into Claude / Cursor.  
 > **Codex CLI users:** prefer https://hub.stifer.xyz/codex-setup.md (same Hub, different host config).  
 > Base: https://hub.stifer.xyz  
-> Updated: 2026-07-25 · agentflow **v0.2.2** (download-first)
+> Updated: 2026-07-25 · agentflow **v0.2.3** (download-first)
 
 ## Critical: agentflow install is a three-part bundle
 
@@ -45,13 +45,13 @@ Full detail: https://hub.stifer.xyz/agentflow-setup.md
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/toustifer/agentflow/master/scripts/install.sh \
-  | VERSION=v0.2.2 bash -s -- --write-config
+  | VERSION=v0.2.3 bash -s -- --write-config
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-$env:VERSION = 'v0.2.2'
+$env:VERSION = 'v0.2.3'
 irm https://raw.githubusercontent.com/toustifer/agentflow/master/scripts/install.ps1 | iex
 # or: .\install.ps1 -WriteConfig
 ```
@@ -59,7 +59,7 @@ irm https://raw.githubusercontent.com/toustifer/agentflow/master/scripts/install
 Installer:
 
 1. Downloads `skill.tgz` + platform binary from  
-   https://github.com/toustifer/agentflow/releases/tag/v0.2.2  
+   https://github.com/toustifer/agentflow/releases/tag/v0.2.3  
 2. Installs to `~/.claude/skills/agentflow/` (+ `bin/agentflow`)  
 3. Verifies **MCP GATE** is present  
 4. Prints (or writes) `mcpServers.agentflow` with `args: ["stdio"]`
@@ -163,6 +163,19 @@ Resolve order: `env` → **namespace** → workdir → home.
 Home-only soft-sync config is still useful as JWT storage + fallback; durable multi-project bind is **namespace metadata**.  
 Does not replace sticky hooks.
 ---
+
+
+
+## Version check / upgrade
+
+After install, in Claude:
+
+```text
+/agentflow update
+```
+
+Checks **skill** (`~/.claude/skills/agentflow/VERSION`) and **MCP binary** (`agentflow version`) against GitHub latest, and prints upgrade commands if either is behind or they mismatch.
+
 
 ## Do not
 

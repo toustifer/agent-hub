@@ -5,7 +5,7 @@
 > Skill + MCP binary + sticky hooks are mandatory for personal local work on Claude.  
 > Hub team MCP is separate.  
 > **Codex CLI:** Hub remote MCP + optional agentflow stdio — see https://hub.stifer.xyz/codex-setup.md  
-> Updated: 2026-07-25 · Release **v0.2.2**
+> Updated: 2026-07-25 · Release **v0.2.3**
 
 ## Bundle rule (all required for local product)
 
@@ -31,7 +31,7 @@ With auto MCP config write:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/toustifer/agentflow/master/scripts/install.sh \
-  | VERSION=v0.2.2 bash -s -- --write-config
+  | VERSION=v0.2.3 bash -s -- --write-config
 ```
 
 ### Windows (PowerShell)
@@ -45,7 +45,7 @@ Then merge sticky hooks printed by the script into `~/.claude/settings.json` (do
 ## What the installer does
 
 1. Downloads `skill.tgz` + platform binary from  
-   https://github.com/toustifer/agentflow/releases/tag/v0.2.2  
+   https://github.com/toustifer/agentflow/releases/tag/v0.2.3  
 2. Installs to `~/.claude/skills/agentflow/` (+ `bin/agentflow`)  
 3. Verifies **MCP GATE** is present in `hooks/mode-lib.js`  
 4. Prints (or writes) `mcpServers.agentflow` with `args: ["stdio"]`
@@ -60,7 +60,7 @@ Then merge sticky hooks printed by the script into `~/.claude/settings.json` (do
 | `agentflow-linux-amd64` | Linux x64 |
 | `agentflow-windows-amd64.exe` | Windows x64 |
 
-Release page: https://github.com/toustifer/agentflow/releases/tag/v0.2.2
+Release page: https://github.com/toustifer/agentflow/releases/tag/v0.2.3
 
 ### MCP config example (macOS)
 
@@ -129,7 +129,7 @@ Use absolute paths. Windows: `...\bin\agentflow.exe` and `node C:\Users\YOU\.cla
 |---------|-----|
 | No `/agentflow` | Re-run install / extract `skill.tgz` |
 | No tools / `/mcp` failed | Wrong binary path; need `args:["stdio"]`; restart |
-| No `MCP GATE` grep | Old skill — reinstall v0.2.2+ |
+| No `MCP GATE` grep | Old skill — reinstall v0.2.3+ |
 | Agent uses Bash + stdio | **Invalid** while mode on — fix MCP |
 
 ---
@@ -159,7 +159,7 @@ See https://hub.stifer.xyz/agent-setup.md
 ```bash
 git clone https://github.com/toustifer/agentflow.git && cd agentflow
 go build -o ~/.claude/skills/agentflow/bin/agentflow ./cmd/agentflow/
-# publishers: VERSION=v0.2.2 bash scripts/build-release.sh
+# publishers: VERSION=v0.2.3 bash scripts/build-release.sh
 ```
 
 ## Summary
@@ -173,4 +173,4 @@ Do NOT          = require go build for end users; Bash-bypass when MCP missing
 
 Master: https://hub.stifer.xyz/agent-setup.md  
 Repo: https://github.com/toustifer/agentflow  
-Release: https://github.com/toustifer/agentflow/releases/tag/v0.2.2
+Release: https://github.com/toustifer/agentflow/releases/tag/v0.2.3
