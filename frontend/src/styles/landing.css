@@ -75,6 +75,12 @@
   color: var(--ld-text);
 }
 
+.ld-nav-links a.ld-nav-active,
+.ld-nav-links a.router-link-active {
+  color: var(--ld-text);
+  font-weight: 600;
+}
+
 .ld-nav-actions {
   display: flex;
   align-items: center;

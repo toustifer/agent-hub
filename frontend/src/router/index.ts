@@ -10,9 +10,9 @@ const router = createRouter({
     { path: '/invite/accept', name: 'InviteAccept', component: () => import('@/views/InviteAccept.vue') },
     { path: '/app', name: 'Dashboard', component: () => import('@/views/Dashboard.vue'), meta: { requiresAuth: true } },
     { path: '/dashboard', redirect: '/app' },
-    { path: '/mcp', name: 'OfficialDocs', component: () => import('@/views/OfficialDocs.vue'), meta: { requiresAuth: true } },
-    { path: '/docs', name: 'OfficialDocsAlias', component: () => import('@/views/OfficialDocs.vue'), meta: { requiresAuth: true } },
-    // legacy alias kept for bookmarks
+    // Public portal docs (no auth). Human entry is /docs only — do not advertise /mcp as docs (MCP protocol).
+    { path: '/docs', name: 'OfficialDocs', component: () => import('@/views/OfficialDocs.vue') },
+    { path: '/mcp', redirect: '/docs' },
     { path: '/mcp-setup', redirect: '/docs' },
     { path: '/team/:slugCode', name: 'TeamPage', component: () => import('@/views/TeamPage.vue'), meta: { requiresAuth: true } },
     { path: '/businesses', name: 'BusinessList', component: () => import('@/views/BusinessList.vue'), meta: { requiresAuth: true } },

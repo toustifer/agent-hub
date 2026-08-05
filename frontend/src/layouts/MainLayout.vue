@@ -5,7 +5,6 @@
       <el-menu :default-active="activeMenu" router class="sidebar-menu">
         <el-menu-item index="/community"><el-icon><Shop /></el-icon> {{ t('community.title') }}</el-menu-item>
         <el-menu-item index="/app"><el-icon><HomeFilled /></el-icon> {{ t('nav.teams') }}</el-menu-item>
-        <el-menu-item index="/docs"><el-icon><Document /></el-icon> {{ t('nav.docs') }}</el-menu-item>
       </el-menu>
     </el-aside>
     <el-container>
@@ -30,7 +29,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from '@/i18n'
-import { Sunny, Moon, HomeFilled, Shop, Document } from '@element-plus/icons-vue'
+import { Sunny, Moon, HomeFilled, Shop } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -40,13 +39,11 @@ const isDark = ref(false)
 
 const activeMenu = computed(() => {
   if (route.path === '/community' || route.path.startsWith('/community/')) return '/community'
-  if (route.path === '/mcp' || route.path.startsWith('/mcp') || route.path === '/docs' || route.path.startsWith('/docs')) return '/docs'
   if (route.path.startsWith('/team/') || route.path === '/app' || route.path === '/dashboard') return '/app'
   return route.path
 })
 
 const pageTitle = computed(() => {
-  if (activeMenu.value === '/docs') return t('nav.docs')
   if (activeMenu.value === '/community') return t('community.title')
   if (activeMenu.value === '/app') return t('nav.teams')
   return String(route.name || '')
@@ -78,25 +75,4 @@ html.dark .sidebar-menu { background: #1e1e1e !important; border-right-color: #3
 html.dark .el-menu-item { color: #999 !important; }
 html.dark .el-menu-item:hover { background: #2a2a2a !important; }
 html.dark .el-menu-item.is-active { color: #409EFF !important; }
-html.dark .topbar { background: #1e1e1e !important; border-bottom-color: #333 !important; color: #e0e0e0; }
-html.dark .main-area { background: #141414 !important; }
-html.dark .el-card { background: #1e1e1e !important; border-color: #333 !important; color: #e0e0e0; }
-.el-table { --el-table-tr-bg-color: #1a1a1a; --el-table-row-hover-bg-color: #2a2a2a; --el-fill-color-blank: #1a1a1a; }
-.el-table__row--striped .el-table__cell { background-color: #222 !important; }
-html.dark .el-table { --el-table-bg-color: #1e1e1e; --el-table-tr-bg-color: #1e1e1e; --el-table-header-bg-color: #252525; --el-table-border-color: #333; --el-table-text-color: #e0e0e0; --el-table-row-hover-bg-color: #2a2a2a; }
-html.dark .el-tag--info { --el-tag-bg-color: #333; --el-tag-text-color: #ccc; }
-html.dark .el-tabs__header { border-bottom-color: #333 !important; }
-html.dark .el-tabs__item { color: #999 !important; }
-html.dark .el-tabs__item.is-active { color: #409EFF !important; }
-html.dark .el-timeline-item__node { background: #333 !important; }
-html.dark .el-dialog { background: #1e1e1e !important; }
-html.dark .el-input__wrapper { background: #252525 !important; box-shadow: 0 0 0 1px #333 inset !important; }
-html.dark .el-input__inner { color: #e0e0e0 !important; }
-.sidebar { background: #001529; }
-.sidebar-menu { border-right: none; }
-.logo { padding: 20px 16px; color: #fff; font-size: 18px; font-weight: bold; text-align: center; white-space: nowrap; }
-.topbar { background: #fff; border-bottom: 1px solid #e6e6e6; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
-html.dark .topbar { background: #1e1e1e; }
-.main-area { background: #f0f2f5; padding: 20px; }
-html.dark .main-area { background: #141414; }
 </style>

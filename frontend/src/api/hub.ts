@@ -90,4 +90,36 @@ export function refreshBranches(code: string, data?: { repo_url?: string; defaul
   return api.post(`/v1/hub/repos/${code}/branches/refresh`, data || {})
 }
 
+// Requirements
+export function listRequirements(code: string, status?: string) {
+  return api.get(`/v1/hub/requirements/${code}`, { params: status ? { status } : {} })
+}
+export function getRequirement(code: string, id: number) {
+  return api.get(`/v1/hub/requirements/${code}/${id}`)
+}
+export function createRequirement(code: string, data: { title: string; description?: string }) {
+  return api.post(`/v1/hub/requirements/${code}`, data)
+}
+export function updateRequirement(code: string, id: number, data: { title?: string; description?: string }) {
+  return api.patch(`/v1/hub/requirements/${code}/${id}`, data)
+}
+export function submitRequirement(code: string, id: number, comment?: string) {
+  return api.post(`/v1/hub/requirements/${code}/${id}/submit`, { comment })
+}
+export function acceptRequirement(code: string, id: number, comment?: string) {
+  return api.post(`/v1/hub/requirements/${code}/${id}/accept`, { comment })
+}
+export function rejectRequirement(code: string, id: number, comment?: string) {
+  return api.post(`/v1/hub/requirements/${code}/${id}/reject`, { comment })
+}
+export function cancelRequirement(code: string, id: number, comment?: string) {
+  return api.post(`/v1/hub/requirements/${code}/${id}/cancel`, { comment })
+}
+export function listRequirementComments(code: string, id: number) {
+  return api.get(`/v1/hub/requirements/${code}/${id}/comments`)
+}
+export function createRequirementComment(code: string, id: number, data: { body: string; decision?: string }) {
+  return api.post(`/v1/hub/requirements/${code}/${id}/comments`, data)
+}
+
 export default api

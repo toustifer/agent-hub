@@ -19,3 +19,14 @@ export interface HubEvent {
   id: number; actor: string; event_type: string
   payload: Record<string, any>; created_at: string
 }
+export interface Requirement {
+  id: number; title: string; description: string; status: string
+  created_by_email: string
+  submitted_at: string | null; accepted_at: string | null
+  created_at: string; updated_at: string
+  task_count: number; tasks_done: number
+}
+export interface RequirementComment {
+  id: number; author_email: string; body: string
+  decision: string; created_at: string
+}

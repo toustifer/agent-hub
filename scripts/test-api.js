@@ -1,7 +1,13 @@
 const https = require('https');
+const API_KEY = process.env.HUB_API_KEY;
+const BUSINESS = process.env.HUB_BUSINESS_CODE || process.env.HUB_BUSINESS;
+if (!API_KEY || !BUSINESS) {
+  console.error('Set HUB_API_KEY and HUB_BUSINESS_CODE. Magic defaults (agent-company-worker / ai-medbox) were removed.');
+  process.exit(1);
+}
 function api(method, path, data, headers) {
   return new Promise((resolve) => {
-    const opts = {hostname:'hub.stifer.xyz',path,method,headers:{'Content-Type':'application/json','X-API-Key':'agent-company-worker','X-Business-Code':'ai-medbox',...headers}};
+    const opts = {hostname:'hub.stifer.xyz',path,method,headers:{'Content-Type':'application/json','X-API-Key':API_KEY,'X-Business-Code':BUSINESS,...headers}};
     const req = https.request(opts, res => {let d='';res.on('data',c=>d+=c);res.on('end',()=>{try{resolve({code:res.statusCode,data:JSON.parse(d)})}catch(e){resolve({code:res.statusCode,data:d})}})});
     if(data) req.write(JSON.stringify(data));
     req.end();

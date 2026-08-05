@@ -81,6 +81,12 @@
             </el-table-column>
           </el-table>
         </el-tab-pane>
+        <el-tab-pane name="requirements" label="需求">
+          <RequirementsTab :business-code="teamCode" />
+        </el-tab-pane>
+        <el-tab-pane name="board" label="看板">
+          <KanbanBoard :business-code="teamCode" />
+        </el-tab-pane>
         <el-tab-pane :label="$t('team.locks')" name="locks">
           <el-table :data="locks" class="dark-table" v-loading="loading" stripe>
             <el-table-column prop="resource_key" :label="$t('team.resource')" width="300" />
@@ -347,6 +353,8 @@ import { useI18n } from '@/i18n'
 import { parseTeamPath, buildTeamPath } from '@/utils/teamPath'
 import { ElMessage } from 'element-plus'
 import MainLayout from '@/layouts/MainLayout.vue'
+import RequirementsTab from '@/components/RequirementsTab.vue'
+import KanbanBoard from '@/components/KanbanBoard.vue'
 
 const route = useRoute()
 const router = useRouter()

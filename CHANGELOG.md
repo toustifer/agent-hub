@@ -11,6 +11,19 @@ Format inspired by Keep a Changelog. Versioning: [SemVer](https://semver.org/).
 - `/version` and version fields on `/health`
 - Docs: `docs/RELEASE.md`
 
+## [0.2.2] - 2026-08-05
+
+### Added
+- Requirements, comments, task linking, and status transitions for non-technical collaboration.
+- Matching Hub REST routes and leader-agent MCP tools for requirements.
+- Federation dashboard components and the refreshed documentation portal.
+- Login support for HTTP Hub URLs and email-based authentication.
+- Frontend TypeScript project configuration so CI type-checks before bundling.
+
+### Changed
+- Updated Hub navigation and portal layout for the federation workflow.
+- Added the `0016_requirements` database migration.
+
 ## [0.2.0] - 2026-07-23
 
 ### Added
@@ -18,5 +31,6 @@ Format inspired by Keep a Changelog. Versioning: [SemVer](https://semver.org/).
 - Official docs tab (Hub MCP + agentflow setup)
 - Soft-sync export tool `hub_export_soft_sync_config`
 
-[Unreleased]: https://github.com/toustifer/agent-hub/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/toustifer/agent-hub/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/toustifer/agent-hub/releases/tag/v0.2.2
 [0.2.0]: https://github.com/toustifer/agent-hub/releases/tag/v0.2.0

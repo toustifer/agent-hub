@@ -4,9 +4,13 @@ const path = require("path");
 const https = require("https");
 
 const HUB = process.env.HUB_URL || "https://hub.stifer.xyz";
-const API_KEY = process.env.HUB_API_KEY || "agent-company-worker";
-const BUSINESS = process.env.HUB_BUSINESS || "ai-medbox";
+const API_KEY = process.env.HUB_API_KEY;
+const BUSINESS = process.env.HUB_BUSINESS || process.env.HUB_BUSINESS_CODE;
 const WORKERS_DIR = process.argv[2] || process.cwd() + "/.mycompany/workers";
+if (!API_KEY || !BUSINESS) {
+  console.error("Set HUB_API_KEY and HUB_BUSINESS (or HUB_BUSINESS_CODE). Magic defaults were removed.");
+  process.exit(1);
+}
 
 function request(method, path, body) {
   return new Promise((resolve, reject) => {

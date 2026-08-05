@@ -1,29 +1,5 @@
 <template>
-  <div class="landing-root">
-    <header class="ld-nav">
-      <div class="ld-wrap ld-nav-inner">
-        <a class="ld-brand" href="/">
-          <img src="/logo.png" alt="Agent Hub" @error="($event.target as HTMLImageElement).style.display='none'" />
-          <span>Agent Hub</span>
-        </a>
-        <nav class="ld-nav-links">
-          <a href="#product">{{ t('landing.nav.product') }}</a>
-          <a :href="setupDoc" target="_blank" rel="noopener">{{ t('landing.nav.docs') }}</a>
-          <a :href="hubRepo" target="_blank" rel="noopener">{{ t('landing.nav.github') }}</a>
-        </nav>
-        <div class="ld-nav-actions">
-          <button type="button" class="ld-lang" @click="toggleLang">{{ locale === 'zh' ? 'EN' : '中' }}</button>
-          <template v-if="loggedIn">
-            <router-link class="ld-btn ld-btn-primary" to="/app">{{ t('landing.nav.app') }}</router-link>
-          </template>
-          <template v-else>
-            <router-link class="ld-btn ld-btn-ghost" to="/login">{{ t('landing.nav.login') }}</router-link>
-            <router-link class="ld-btn ld-btn-primary" to="/login?mode=register">{{ t('landing.nav.start') }}</router-link>
-          </template>
-        </div>
-      </div>
-    </header>
-
+  <PortalChrome>
     <section class="ld-hero">
       <div class="ld-wrap">
         <h1>{{ t('landing.hero.title') }}</h1>
@@ -32,9 +8,9 @@
           <router-link class="ld-btn ld-btn-primary ld-btn-lg" :to="loggedIn ? '/app' : '/login?mode=register'">
             {{ loggedIn ? t('landing.nav.app') : t('landing.cta.start') }}
           </router-link>
-          <a class="ld-btn ld-btn-ghost ld-btn-lg" :href="setupDoc" target="_blank" rel="noopener">
+          <router-link class="ld-btn ld-btn-ghost ld-btn-lg" to="/docs">
             {{ t('landing.cta.docs') }}
-          </a>
+          </router-link>
         </div>
       </div>
     </section>
@@ -130,33 +106,18 @@
         </div>
       </div>
     </section>
-
-    <footer class="ld-footer">
-      <div class="ld-wrap ld-footer-inner">
-        <div>© {{ year }} {{ t('landing.footer.rights') }} · Agent Hub</div>
-        <div class="ld-footer-links">
-          <a :href="hubRepo" target="_blank" rel="noopener">{{ t('landing.footer.hubRepo') }}</a>
-          <a :href="afRepo" target="_blank" rel="noopener">{{ t('landing.footer.afRepo') }}</a>
-          <a :href="setupDoc" target="_blank" rel="noopener">{{ t('landing.footer.setup') }}</a>
-          <a :href="afSetupDoc" target="_blank" rel="noopener">agentflow-setup</a>
-        </div>
-      </div>
-    </footer>
-  </div>
+  </PortalChrome>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import PortalChrome from '@/components/PortalChrome.vue'
 import { useI18n } from '@/i18n'
-import '@/styles/landing.css'
 
-const { t, locale, setLocale } = useI18n()
+const { t } = useI18n()
 const loggedIn = ref(!!localStorage.getItem('token'))
 const copied = ref(false)
-const year = new Date().getFullYear()
 
-const setupDoc = 'https://hub.stifer.xyz/agent-setup.md'
-const afSetupDoc = 'https://hub.stifer.xyz/agentflow-setup.md'
 const hubRepo = 'https://github.com/toustifer/agent-hub'
 const afRepo = 'https://github.com/toustifer/agentflow'
 
@@ -168,10 +129,6 @@ const mcpSnippet = `{
     }
   }
 }`
-
-function toggleLang() {
-  setLocale(locale.value === 'zh' ? 'en' : 'zh')
-}
 
 async function copySnippet() {
   try {

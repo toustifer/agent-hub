@@ -30,7 +30,7 @@ func (h *Hub) registerTools(s *mcpsdk.Server) {
 	}, h.toolListMyBusinesses)
 
 	mcpsdk.AddTool(s, &mcpsdk.Tool{
-		Name: "hub_export_soft_sync_config",
+		Name:        "hub_export_soft_sync_config",
 		Description: "Export soft-sync config for local agentflow: returns JSON for ~/.agent-hub/config.json using the current OAuth/Bearer JWT. Claude should write the file with Write/Bash. This bridges Hub MCP login → agentflow auto progress sync.",
 	}, h.toolExportSoftSyncConfig)
 
@@ -113,6 +113,20 @@ func (h *Hub) registerTools(s *mcpsdk.Server) {
 		Name:        "hub_get_dag",
 		Description: "Get DAG tasks",
 	}, h.toolGetDAG)
+
+	// Requirements for non-technical collaboration (leader agent tools)
+	mcpsdk.AddTool(s, &mcpsdk.Tool{
+		Name:        "hub_list_requirements",
+		Description: "List requirements for a business, optionally filtered by status. Returns ID, title, status, creator, and task progress.",
+	}, h.toolListRequirements)
+	mcpsdk.AddTool(s, &mcpsdk.Tool{
+		Name:        "hub_get_requirement",
+		Description: "Get full detail of a single requirement including linked DAG tasks and their statuses.",
+	}, h.toolGetRequirement)
+	mcpsdk.AddTool(s, &mcpsdk.Tool{
+		Name:        "hub_update_requirement",
+		Description: "Update a requirement's status and/or replace its linked DAG task IDs. The leader agent uses this to mark progress and associate decomposed tasks.",
+	}, h.toolUpdateRequirement)
 
 	// Invite / link requests
 	mcpsdk.AddTool(s, &mcpsdk.Tool{
@@ -325,6 +339,38 @@ type refreshBranchesArgs struct {
 	RepoURL      string `json:"repo_url,omitempty"`
 	DefaultOnly  bool   `json:"default_only,omitempty"`
 }
+type listRequirementsArgs struct {
+	BusinessCode string `json:"business_code"`
+	StatusFilter string `json:"status_filter,omitempty"`
+}
+
+type getRequirementArgs struct {
+	BusinessCode string `json:"business_code"`
+	ID           string `json:"id"`
+}
+
+type updateRequirementArgs struct {
+	BusinessCode string    `json:"business_code"`
+	ID           string    `json:"id"`
+	Status       *string   `json:"status,omitempty"`
+	TaskIDs      *[]string `json:"task_ids,omitempty"`
+}
+
+var requirementStatuses = map[string]bool{
+	"draft": true, "submitted": true, "planning": true, "in_progress": true,
+	"in_review": true, "accepted": true, "rejected": true, "cancelled": true,
+}
+
+func validateRequirementStatus(status string) error {
+	if !requirementStatuses[status] {
+		return fmt.Errorf("invalid status: %s", status)
+	}
+	return nil
+}
+
+func requirementUpdateRequested(status *string, taskIDs *[]string) bool {
+	return status != nil || taskIDs != nil
+}
 
 // ── helpers ─────────────────────────────────────────────────────────
 
@@ -476,7 +522,6 @@ func (h *Hub) toolLogin(ctx context.Context, req *mcpsdk.CallToolRequest, args l
 	return textResult(fmt.Sprintf("Open this URL in browser (you must be logged in as a real user):\n\n  %s\n\nThen call hub_login({ code: \"%s\" }) to finish.", url, code))
 }
 
-
 func (h *Hub) toolExportSoftSyncConfig(ctx context.Context, req *mcpsdk.CallToolRequest, args exportSoftSyncArgs) (*mcpsdk.CallToolResult, any, error) {
 	id, err := h.identityFromRequest(ctx, req)
 	if err != nil {
@@ -534,11 +579,11 @@ func (h *Hub) toolExportSoftSyncConfig(ctx context.Context, req *mcpsdk.CallTool
 		}
 	}
 	cfg := map[string]string{
-		"hub_url":        h.PublicBaseURL,
-		"token":          id.BearerToken,
-		"business_code":  bc,
-		"email":          email,
-		"login_at":       time.Now().UTC().Format(time.RFC3339),
+		"hub_url":       h.PublicBaseURL,
+		"token":         id.BearerToken,
+		"business_code": bc,
+		"email":         email,
+		"login_at":      time.Now().UTC().Format(time.RFC3339),
 	}
 	raw, _ := json.MarshalIndent(cfg, "", "  ")
 	pathHint := `~/.agent-hub/config.json`
@@ -1723,4 +1768,163 @@ func (h *Hub) toolListWorkerTemplates(ctx context.Context, req *mcpsdk.CallToolR
 		return textResult("No worker templates.")
 	}
 	return textResult(strings.Join(lines, "\n"))
+}
+
+// ── Requirement MCP tools ──
+
+func (h *Hub) toolListRequirements(ctx context.Context, req *mcpsdk.CallToolRequest, args listRequirementsArgs) (*mcpsdk.CallToolResult, any, error) {
+	if args.BusinessCode == "" {
+		return errResult(errors.New("business_code required"))
+	}
+	bizID, _, _, err := h.requireMembership(ctx, req, args.BusinessCode)
+	if err != nil {
+		return errResult(err)
+	}
+
+	query := `SELECT r.id, r.title, r.status, COALESCE(NULLIF(r.created_by_email,''),''),
+		(SELECT count(*) FROM hub.hub_requirement_links l WHERE l.business_id = r.business_id AND l.requirement_id = r.id),
+		(SELECT count(*) FROM hub.hub_requirement_links l
+		 JOIN hub.hub_dag_state d ON d.business_id=l.business_id AND d.task_id=l.task_id
+			WHERE l.business_id = r.business_id AND l.requirement_id = r.id AND d.status = 'completed')
+	 FROM hub.hub_requirements r WHERE r.business_id = $1`
+	args2 := []interface{}{bizID}
+	if args.StatusFilter != "" {
+		query += ` AND r.status = $2`
+		args2 = append(args2, args.StatusFilter)
+	}
+	query += ` ORDER BY r.updated_at DESC`
+
+	rows, err := h.Svc.Pool.Query(ctx, query, args2...)
+	if err != nil {
+		return errResult(err)
+	}
+	defer rows.Close()
+
+	var lines []string
+	for rows.Next() {
+		var id int64
+		var title, status, email string
+		var taskCount, tasksDone int
+		if err := rows.Scan(&id, &title, &status, &email, &taskCount, &tasksDone); err != nil {
+			continue
+		}
+		lines = append(lines, fmt.Sprintf("[%d] %s: %s (by %s, tasks %d/%d)", id, status, title, email, tasksDone, taskCount))
+	}
+	if len(lines) == 0 {
+		return textResult("No requirements.")
+	}
+	return textResult(strings.Join(lines, "\n"))
+}
+
+func (h *Hub) toolGetRequirement(ctx context.Context, req *mcpsdk.CallToolRequest, args getRequirementArgs) (*mcpsdk.CallToolResult, any, error) {
+	if args.BusinessCode == "" || args.ID == "" {
+		return errResult(errors.New("business_code and id required"))
+	}
+	bizID, _, _, err := h.requireMembership(ctx, req, args.BusinessCode)
+	if err != nil {
+		return errResult(err)
+	}
+
+	var title, description, status, email string
+	var taskCount, tasksDone int
+	err = h.Svc.Pool.QueryRow(ctx,
+		`SELECT r.title, r.description, r.status, COALESCE(NULLIF(r.created_by_email,''),''),
+			(SELECT count(*) FROM hub.hub_requirement_links l WHERE l.business_id = r.business_id AND l.requirement_id = r.id),
+			(SELECT count(*) FROM hub.hub_requirement_links l
+			 JOIN hub.hub_dag_state d ON d.business_id=l.business_id AND d.task_id=l.task_id
+				WHERE l.business_id = r.business_id AND l.requirement_id = r.id AND d.status = 'completed')
+		 FROM hub.hub_requirements r WHERE r.id = $1 AND r.business_id = $2`,
+		args.ID, bizID,
+	).Scan(&title, &description, &status, &email, &taskCount, &tasksDone)
+	if err != nil {
+		return errResult(errors.New("requirement not found"))
+	}
+
+	taskRows, err := h.Svc.Pool.Query(ctx,
+		`SELECT l.task_id, COALESCE(d.title,''), COALESCE(d.status,'')
+		 FROM hub.hub_requirement_links l
+		 LEFT JOIN hub.hub_dag_state d ON d.business_id=l.business_id AND d.task_id=l.task_id
+		 WHERE l.business_id=$1 AND l.requirement_id=$2
+		 ORDER BY l.task_id`, bizID, args.ID)
+	var taskLines []string
+	if err == nil {
+		defer taskRows.Close()
+		for taskRows.Next() {
+			var tid, tTitle, tStatus string
+			if taskRows.Scan(&tid, &tTitle, &tStatus) == nil {
+				taskLines = append(taskLines, fmt.Sprintf("  %s: %s [%s]", tid, tTitle, tStatus))
+			}
+		}
+	}
+
+	out := fmt.Sprintf("Title: %s\nDescription: %s\nStatus: %s\nCreated by: %s\nProgress: %d/%d tasks completed",
+		title, description, status, email, tasksDone, taskCount)
+	if len(taskLines) > 0 {
+		out += "\nLinked tasks:\n" + strings.Join(taskLines, "\n")
+	}
+	return textResult(out)
+}
+
+func (h *Hub) toolUpdateRequirement(ctx context.Context, req *mcpsdk.CallToolRequest, args updateRequirementArgs) (*mcpsdk.CallToolResult, any, error) {
+	if args.BusinessCode == "" || args.ID == "" {
+		return errResult(errors.New("business_code and id required"))
+	}
+	if !requirementUpdateRequested(args.Status, args.TaskIDs) {
+		return errResult(errors.New("at least one of status or task_ids required"))
+	}
+	if args.Status != nil {
+		if err := validateRequirementStatus(*args.Status); err != nil {
+			return errResult(err)
+		}
+	}
+	bizID, _, _, err := h.requireMembership(ctx, req, args.BusinessCode)
+	if err != nil {
+		return errResult(err)
+	}
+
+	var exists bool
+	if err = h.Svc.Pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM hub.hub_requirements WHERE id=$1 AND business_id=$2)`, args.ID, bizID).Scan(&exists); err != nil || !exists {
+		return errResult(errors.New("requirement not found"))
+	}
+	tx, err := h.Svc.Pool.Begin(ctx)
+	if err != nil {
+		return errResult(err)
+	}
+	defer tx.Rollback(ctx)
+	changes := []string{}
+	if args.Status != nil {
+		result, execErr := tx.Exec(ctx,
+			`UPDATE hub.hub_requirements SET status=$1, updated_at=now() WHERE id=$2 AND business_id=$3`,
+			*args.Status, args.ID, bizID)
+		if execErr != nil {
+			return errResult(execErr)
+		}
+		if result.RowsAffected() != 1 {
+			return errResult(errors.New("requirement not found"))
+		}
+		changes = append(changes, "status="+*args.Status)
+	}
+
+	if args.TaskIDs != nil {
+		_, err = tx.Exec(ctx,
+			`DELETE FROM hub.hub_requirement_links WHERE business_id=$1 AND requirement_id=$2`,
+			bizID, args.ID)
+		if err != nil {
+			return errResult(err)
+		}
+		for _, taskID := range *args.TaskIDs {
+			_, err = tx.Exec(ctx,
+				`INSERT INTO hub.hub_requirement_links (business_id, requirement_id, task_id) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`,
+				bizID, args.ID, taskID)
+			if err != nil {
+				return errResult(err)
+			}
+		}
+		changes = append(changes, fmt.Sprintf("tasks=%d", len(*args.TaskIDs)))
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return errResult(err)
+	}
+
+	return textResult(fmt.Sprintf("Requirement %s updated: %s", args.ID, strings.Join(changes, ", ")))
 }
