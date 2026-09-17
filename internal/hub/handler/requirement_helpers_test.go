@@ -34,3 +34,59 @@ func TestRequirementRolePermissions(t *testing.T) {
 		}
 	}
 }
+
+func TestBuildUpdateRequirementSets(t *testing.T) {
+	strPtr := func(s string) *string { return &s }
+	id := "req-123"
+	var bizID int64 = 456
+
+	t.Run("only title", func(t *testing.T) {
+		req := updateRequirementReq{
+			Title: strPtr("New Title"),
+		}
+		sets, args := buildUpdateRequirementSets(id, bizID, req)
+		if len(args) != 3 {
+			t.Fatalf("expected args len 3, got %d: %+v", len(args), args)
+		}
+		if len(sets) != 2 || sets[0] != "title = $3" || sets[1] != "updated_at = now()" {
+			t.Fatalf("unexpected sets: %+v", sets)
+		}
+		if args[0] != id || args[1] != bizID || args[2] != "New Title" {
+			t.Fatalf("unexpected args: %+v", args)
+		}
+	})
+
+	t.Run("only description", func(t *testing.T) {
+		req := updateRequirementReq{
+			Description: strPtr("New Description"),
+		}
+		sets, args := buildUpdateRequirementSets(id, bizID, req)
+		if len(args) != 3 {
+			t.Fatalf("expected args len 3, got %d: %+v", len(args), args)
+		}
+		if len(sets) != 2 || sets[0] != "description = $3" || sets[1] != "updated_at = now()" {
+			t.Fatalf("unexpected sets: %+v", sets)
+		}
+		if args[0] != id || args[1] != bizID || args[2] != "New Description" {
+			t.Fatalf("unexpected args: %+v", args)
+		}
+	})
+
+	t.Run("both title and description", func(t *testing.T) {
+		req := updateRequirementReq{
+			Title:       strPtr("New Title"),
+			Description: strPtr("New Description"),
+		}
+		sets, args := buildUpdateRequirementSets(id, bizID, req)
+		if len(args) != 4 {
+			t.Fatalf("expected args len 4, got %d: %+v", len(args), args)
+		}
+		if len(sets) != 3 || sets[0] != "title = $3" || sets[1] != "description = $4" || sets[2] != "updated_at = now()" {
+			t.Fatalf("unexpected sets: %+v", sets)
+		}
+		if args[0] != id || args[1] != bizID || args[2] != "New Title" || args[3] != "New Description" {
+			t.Fatalf("unexpected args: %+v", args)
+		}
+	})
+}
+

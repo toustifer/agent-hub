@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -201,18 +202,7 @@ func (h *Handler) UpdateRequirement(c *gin.Context) {
 		return
 	}
 
-	var sets []string
-	args := []interface{}{id, bizID}
-	if req.Title != nil {
-		sets = append(sets, "title = $3")
-		args = append(args, *req.Title)
-	}
-	if req.Description != nil {
-		idx := len(args) + 1
-		sets = append(sets, "description = $"+string(rune('0'+idx)))
-		args = append(args, *req.Description)
-	}
-	sets = append(sets, "updated_at = now()")
+	sets, args := buildUpdateRequirementSets(id, bizID, req)
 
 	_, err = h.Svc.Pool.Exec(c.Request.Context(),
 		`UPDATE hub.hub_requirements SET `+strings.Join(sets, ", ")+` WHERE id=$1 AND business_id=$2`,
@@ -222,6 +212,21 @@ func (h *Handler) UpdateRequirement(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": "ok"})
+}
+
+func buildUpdateRequirementSets(id, bizID interface{}, req updateRequirementReq) ([]string, []interface{}) {
+	var sets []string
+	args := []interface{}{id, bizID}
+	if req.Title != nil {
+		args = append(args, *req.Title)
+		sets = append(sets, fmt.Sprintf("title = $%d", len(args)))
+	}
+	if req.Description != nil {
+		args = append(args, *req.Description)
+		sets = append(sets, fmt.Sprintf("description = $%d", len(args)))
+	}
+	sets = append(sets, "updated_at = now()")
+	return sets, args
 }
 
 type transitionReq struct {
