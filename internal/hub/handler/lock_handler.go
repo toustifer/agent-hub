@@ -65,6 +65,13 @@ func (h *Handler) ReleaseLock(c *gin.Context) {
 
 func (h *Handler) ListActiveLocks(c *gin.Context) {
 	business := c.Query("business")
+	if business == "" {
+		c.JSON(http.StatusOK, gin.H{"data": []interface{}{}})
+		return
+	}
+	if _, _, ok := h.RequireMembership(c, business); !ok {
+		return
+	}
 	list, err := h.Svc.ListActiveLocks(c.Request.Context(), business)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": err.Error()})

@@ -140,6 +140,9 @@ func (h *Handler) InstallWorker(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": err.Error()})
 		return
 	}
+	if _, _, ok := h.RequireMembership(c, req.BusinessCode); !ok {
+		return
+	}
 	if err := h.Svc.InstallWorker(c.Request.Context(), id, req.BusinessCode); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": err.Error()})
 		return

@@ -202,7 +202,16 @@ func (h *Handler) ReviewLinkRequest(c *gin.Context) {
 		return
 	}
 
-	uid := userID.(int64)
+	userIDRaw, hasUser := c.Get("user_id")
+	if !hasUser || userIDRaw == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "login required"})
+		return
+	}
+	uid, ok := userIDRaw.(int64)
+	if !ok || uid <= 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "invalid user"})
+		return
+	}
 	if requestUserID == uid {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "cannot review your own link request"})
 		return

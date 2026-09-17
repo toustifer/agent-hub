@@ -36,6 +36,13 @@ func (h *Handler) Heartbeat(c *gin.Context) {
 
 func (h *Handler) ListWorkers(c *gin.Context) {
 	business := c.Query("business")
+	if business == "" {
+		c.JSON(http.StatusOK, gin.H{"data": []interface{}{}})
+		return
+	}
+	if _, _, ok := h.RequireMembership(c, business); !ok {
+		return
+	}
 	status := c.Query("status")
 	list, err := h.Svc.ListWorkersByBusiness(c.Request.Context(), business, status)
 	if err != nil {
