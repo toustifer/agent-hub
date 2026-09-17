@@ -66,7 +66,9 @@
             <el-table-column prop="task_id" :label="$t('team.taskId')" width="100" />
             <el-table-column prop="title" :label="$t('team.taskTitle')" />
             <el-table-column prop="status" :label="$t('team.taskStatus')" width="120">
-              <template #default="{r}"><el-tag :type="r.status==='completed'?'success':r.status==='in_progress'?'warning':'info'" size="small">{{ r.status }}</el-tag></template>
+              <template #default="{ row }">
+                <el-tag :type="taskStatusType(row.status)" size="small">{{ row.status }}</el-tag>
+              </template>
             </el-table-column>
             <el-table-column prop="assigned_worker" :label="$t('team.taskWorker')" width="140" />
             <el-table-column label="Assignee" width="180">
@@ -391,6 +393,22 @@ const loading = ref(false)
 const teamDocs = ref<any[]>([])
 const workerTemplates = ref<any[]>([])
 function eventWho(e: any) { return e?.actor_email || e?.actor || '—' }
+function taskStatusType(status: string) {
+  switch (status) {
+    case 'completed':
+    case 'passed':
+      return 'success'
+    case 'in_progress':
+      return 'warning'
+    case 'failed':
+    case 'blocked':
+      return 'danger'
+    case 'review_pending':
+      return 'primary'
+    default:
+      return 'info'
+  }
+}
 const errorMsg = ref('')
 const sseConnected = ref(false)
 const liveCount = ref(0)
@@ -425,7 +443,8 @@ async function doRefreshBranches() {
 function connectSSE(code: string) {
   if (eventSource) eventSource.close()
   const token = localStorage.getItem('token') || ''
-  eventSource = new EventSource(`https://hub.stifer.xyz/v1/hub/events/stream?business=${code}&token=${token}`)
+  const base = import.meta.env.VITE_HUB_API || ''
+  eventSource = new EventSource(`${base}/v1/hub/events/stream?business=${code}&token=${token}`)
   eventSource.onopen = () => { sseConnected.value = true }
   eventSource.onmessage = (e) => { try { const ev = JSON.parse(e.data); events.value.unshift(ev); if (events.value.length > 100) events.value.pop(); liveCount.value++ } catch {} }
   eventSource.onerror = () => { sseConnected.value = false; eventSource?.close() }

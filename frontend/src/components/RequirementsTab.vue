@@ -19,7 +19,7 @@
     <div v-else v-loading="loading">
       <el-card v-for="item in list" :key="item.id" shadow="hover" style="margin-bottom:10px;cursor:pointer" @click="expandId = expandId === item.id ? null : item.id">
         <div style="display:flex;align-items:center;gap:12px">
-          <StatusBadge :status="item.status" />
+          <el-tag :type="statusTagType(item.status)">{{ item.status }}</el-tag>
           <span style="font-weight:bold;flex:1;font-size:15px">{{ item.title }}</span>
           <span style="color:#909399;font-size:12px">{{ item.created_by_email }}</span>
         </div>
@@ -158,6 +158,18 @@ const statusMap: Record<string, { label: string; type: string }> = {
   accepted: { label: '已通过', type: 'success' },
   rejected: { label: '已打回', type: 'danger' },
   cancelled: { label: '已取消', type: 'info' },
+}
+
+function statusTagType(status: string) {
+  switch (status) {
+    case 'draft': return 'info'
+    case 'submitted': return 'warning'
+    case 'in_review': return 'primary'
+    case 'accepted': return 'success'
+    case 'rejected': return 'danger'
+    case 'cancelled': return 'info'
+    default: return 'info'
+  }
 }
 
 function tagType(s: string) { return statusMap[s]?.type || 'info' }
