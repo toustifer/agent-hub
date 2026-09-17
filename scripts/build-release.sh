@@ -38,12 +38,10 @@ if [[ -d frontend ]]; then
   (cd frontend && npx vite build)
   mkdir -p "$OUT/static"
   cp -R frontend/dist/* "$OUT/static/"
-  # public markdown docs for AI paste
-  for f in agent-setup.md agentflow-setup.md mcp.md; do
-    if [[ -f "frontend/public/$f" ]]; then
-      cp "frontend/public/$f" "$OUT/static/"
-    fi
-  done
+  # public markdown docs and assets for AI paste and direct access
+  if [[ -d "frontend/public" ]]; then
+    cp -R frontend/public/* "$OUT/static/" 2>/dev/null || true
+  fi
 fi
 
 echo "==> Packaging migrations"

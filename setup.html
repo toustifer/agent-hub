@@ -48,20 +48,32 @@
   </div>
 
   <div class="step">
-    <h2><span class="step-num">1</span> 克隆 MCP 服务（stdio）</h2>
-    <pre id="clone-pre"><button class="copy-btn" onclick="copyCode(this)">复制</button>git clone https://github.com/toustifer/agent-hub.git
-cd agent-hub/mcp-server
-npm install</pre>
-    <p class="muted">记下 <code>mcp-server/index.js</code> 的<strong>绝对路径</strong>，下一步要用。</p>
-    <div class="note warn">
-      <strong>不要用</strong> <code>https://hub.stifer.xyz/mcp</code> HTTP 入口（当前非主路径）。请用本地 Node stdio。
+    <h2><span class="step-num">1</span> 配置 MCP（推荐：远程 HTTP）</h2>
+    <p class="muted" style="margin-bottom:8px">官方主路径推荐：直接连接远程 Streamable HTTP 入口 <code>https://hub.stifer.xyz/mcp</code>，无需克隆代码或安装本地 Node 依赖。</p>
+    <p class="muted" style="margin-bottom:4px"><strong>方式 A：命令行一键添加（Claude Code）</strong></p>
+    <pre><button class="copy-btn" onclick="copyCode(this)">复制</button>claude mcp add --transport http hub https://hub.stifer.xyz/mcp</pre>
+    <p class="muted" style="margin-top:8px;margin-bottom:4px"><strong>方式 B：写入项目 <code>.mcp.json</code> 或用户配置</strong></p>
+    <pre id="mcp-json"><button class="copy-btn" onclick="copyCode(this)">复制</button>{
+  "mcpServers": {
+    "hub": {
+      "type": "http",
+      "url": "https://hub.stifer.xyz/mcp"
+    }
+  }
+}</pre>
+    <div class="note">
+      <strong>人侧不需要 API Key。</strong> 不要在配置里塞 <code>HUB_API_KEY</code>，除非你要跑无人值守 heartbeat/锁。
     </div>
   </div>
 
   <div class="step">
-    <h2><span class="step-num">2</span> 写入项目 <code>.mcp.json</code></h2>
-    <p class="muted" style="margin-bottom:8px">把 <code>ABS_PATH</code> 换成你机器上的绝对路径（Windows 用双反斜杠）。</p>
-    <pre id="mcp-json"><button class="copy-btn" onclick="copyCode(this)">复制</button>{
+    <h2><span class="step-num">2</span> 备用方案：本地 Node stdio（可选）</h2>
+    <p class="muted">仅供本地二次开发调试或离线备用方案使用：</p>
+    <pre id="clone-pre"><button class="copy-btn" onclick="copyCode(this)">复制</button>git clone https://github.com/toustifer/agent-hub.git
+cd agent-hub/mcp-server
+npm install</pre>
+    <p class="muted" style="margin-bottom:8px">写入配置（把 <code>ABS_PATH</code> 换成你机器上的绝对路径，Windows 用双反斜杠）：</p>
+    <pre><button class="copy-btn" onclick="copyCode(this)">复制</button>{
   "mcpServers": {
     "hub": {
       "command": "node",
@@ -72,9 +84,6 @@ npm install</pre>
     }
   }
 }</pre>
-    <div class="note">
-      <strong>人侧不需要 API Key。</strong> 不要在配置里塞 <code>HUB_API_KEY</code>，除非你要跑无人值守 heartbeat/锁。
-    </div>
   </div>
 
   <div class="step">
