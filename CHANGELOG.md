@@ -11,6 +11,22 @@ Format inspired by Keep a Changelog. Versioning: [SemVer](https://semver.org/).
 - `/version` and version fields on `/health`
 - Docs: `docs/RELEASE.md`
 
+## [0.2.3] - 2026-09-18
+
+### Security
+- Enforce team membership check in `InstallWorker` to prevent unauthorized worker installation into other tenants.
+- Enforce membership verification on `ListWorkers` and `ListActiveLocks` when `business` parameter is supplied; disallow empty query to prevent cross-tenant enumeration.
+- Guard against nil pointer and type assertion panic in `ReviewLinkRequest`.
+
+### Fixed
+- Fix SQL parameter placeholder collision in `UpdateRequirement` when updating both `title` and `description`.
+- Add database migration `0017_playbooks_unique_constraint.sql` adding `UNIQUE(business_id, category, title)` to `hub_playbooks` for `ON CONFLICT` support.
+- Fix scope slot destructuring in `TeamPage.vue` DAG status column (`{row}` instead of `{r}`).
+- Replace missing `StatusBadge` component with Element Plus `el-tag` in `RequirementsTab.vue`.
+- Decouple hardcoded domain in `TeamPage.vue` SSE connection to support `VITE_HUB_API` and relative paths.
+- Align `setup.html` with official Streamable HTTP MCP endpoint.
+- Copy all `frontend/public/*` documents and assets during release packaging in `build-release.sh`.
+
 ## [0.2.2] - 2026-08-05
 
 ### Added
@@ -31,6 +47,7 @@ Format inspired by Keep a Changelog. Versioning: [SemVer](https://semver.org/).
 - Official docs tab (Hub MCP + agentflow setup)
 - Soft-sync export tool `hub_export_soft_sync_config`
 
-[Unreleased]: https://github.com/toustifer/agent-hub/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/toustifer/agent-hub/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/toustifer/agent-hub/releases/tag/v0.2.3
 [0.2.2]: https://github.com/toustifer/agent-hub/releases/tag/v0.2.2
 [0.2.0]: https://github.com/toustifer/agent-hub/releases/tag/v0.2.0
