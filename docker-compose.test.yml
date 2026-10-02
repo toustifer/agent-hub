@@ -1,0 +1,73 @@
+services:
+  test-postgres:
+    image: postgres:16-alpine
+    container_name: hub-test-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hub_test
+      POSTGRES_PASSWORD: hub_password
+      POSTGRES_DB: hub_test
+    ports:
+      - "15432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hub_test -d hub_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+      start_period: 2s
+    networks:
+      - hub-test-net
+
+  test-redis:
+    image: redis:7-alpine
+    container_name: hub-test-redis
+    restart: unless-stopped
+    ports:
+      - "16379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+      start_period: 2s
+    networks:
+      - hub-test-net
+
+  test-hub:
+    image: golang:1.25.7
+    container_name: hub-test-server
+    restart: "no"
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - hub-test-go-cache:/go/pkg/mod
+    environment:
+      HUB_DATABASE_URL: "postgres://hub_test:hub_password@test-postgres:5432/hub_test?sslmode=disable&search_path=hub,public"
+      HUB_REDIS_URL: "redis://test-redis:6379/0"
+      HUB_JWT_SECRET: "test-secret-key-must-be-long-enough-32bytes"
+      HUB_PORT: "9000"
+      PORT: "9000"
+      HUB_HOST: "0.0.0.0"
+      GOPROXY: "https://goproxy.cn,direct"
+    ports:
+      - "9000:9000"
+    depends_on:
+      test-postgres:
+        condition: service_healthy
+      test-redis:
+        condition: service_healthy
+    command: ["go", "run", "./cmd/hub"]
+    networks:
+      - hub-test-net
+    profiles:
+      - app
+      - full
+
+networks:
+  hub-test-net:
+    driver: bridge
+
+volumes:
+  hub-test-go-cache:
