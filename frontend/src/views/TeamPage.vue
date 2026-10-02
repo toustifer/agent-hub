@@ -394,17 +394,24 @@ const teamDocs = ref<any[]>([])
 const workerTemplates = ref<any[]>([])
 function eventWho(e: any) { return e?.actor_email || e?.actor || '—' }
 function taskStatusType(status: string) {
-  switch (status) {
+  const s = (status || '').toLowerCase().trim()
+  switch (s) {
     case 'completed':
     case 'passed':
+    case 'done':
       return 'success'
     case 'in_progress':
+    case 'executing':
       return 'warning'
     case 'failed':
     case 'blocked':
+    case 'rework_needed':
       return 'danger'
     case 'review_pending':
+    case 'in_review':
       return 'primary'
+    case 'assigned':
+    case 'pending':
     default:
       return 'info'
   }
