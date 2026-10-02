@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stifer/agent-hub/internal/hub/service"
@@ -36,9 +35,6 @@ func (h *Handler) UpsertTeamDoc(c *gin.Context) {
 	if req.DocKey == "" || req.Title == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "doc_key and title required"})
 		return
-	}
-	if utf8.RuneCountInString(req.Content) > maxTeamDocBytes {
-		// rune count is not bytes; enforce byte size
 	}
 	if len(req.Content) > maxTeamDocBytes {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "content too large (max 64KB)"})

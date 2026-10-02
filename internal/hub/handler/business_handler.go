@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stifer/agent-hub/internal/hub/service"
 )
 
 type createBusinessReq struct {
@@ -158,52 +159,8 @@ func (h *Handler) PatchBusinessProfile(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"data": gin.H{
 		"business":  biz,
-		"team_path": serviceBuildTeamPath(biz.Name, biz.Code),
+		"team_path": service.BuildTeamPath(biz.Name, biz.Code),
 	}})
-}
-
-func serviceBuildTeamPath(name, code string) string {
-	// local import-free helper — mirrors service.BuildTeamPath
-	return fmt.Sprintf("/team/%s", teamPathSegment(name, code))
-}
-
-func teamPathSegment(name, code string) string {
-	// keep simple: code always; optional slug prefix
-	slug := sanitizeDisplaySlug(name)
-	if slug == "" {
-		return code
-	}
-	return slug + "-" + code
-}
-
-func sanitizeDisplaySlug(name string) string {
-	var b []rune
-	prevDash := false
-	for _, r := range name {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r > 127 {
-			// letters, digits, or non-ASCII (CJK etc.)
-			if r >= 'A' && r <= 'Z' {
-				r = r + 32
-			}
-			b = append(b, r)
-			prevDash = false
-			continue
-		}
-		if r == ' ' || r == '-' || r == '_' {
-			if len(b) > 0 && !prevDash {
-				b = append(b, '-')
-				prevDash = true
-			}
-		}
-	}
-	// trim dashes
-	for len(b) > 0 && b[0] == '-' {
-		b = b[1:]
-	}
-	for len(b) > 0 && b[len(b)-1] == '-' {
-		b = b[:len(b)-1]
-	}
-	return string(b)
 }
 
 func (h *Handler) GetBusinessByCode(c *gin.Context) {

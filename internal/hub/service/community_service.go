@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strconv"
 
 	"github.com/stifer/agent-hub/ent"
@@ -251,18 +250,3 @@ func (s *Service) AddCommunityWorkerReview(ctx context.Context, workerID, userID
 	return r, nil
 }
 
-func deidentify(text string) string {
-	reFilepath := regexp.MustCompile(`(?:[A-Za-z]:\\[\w\-. \\]+|\/[\w\-. \/]+)\.\w{1,6}`)
-	text = reFilepath.ReplaceAllString(text, "[文件路径]")
-
-	reURL := regexp.MustCompile(`https?:\/\/[^\s]+`)
-	text = reURL.ReplaceAllString(text, "[URL]")
-
-	reIP := regexp.MustCompile(`\b(?:\d{1,3}\.){3}\d{1,3}\b`)
-	text = reIP.ReplaceAllString(text, "[IP地址]")
-
-	reAPIKey := regexp.MustCompile(`(?:sk-[a-zA-Z0-9]+|Bearer\s+[a-zA-Z0-9\-_\.]+)`)
-	text = reAPIKey.ReplaceAllString(text, "[密钥]")
-
-	return text
-}
