@@ -2,8 +2,10 @@
 // 场景: Windows(worker-win) 和 Mac(worker-mac) 编辑同一项目的不同文件
 // Requires: HUB_API_KEY + HUB_BUSINESS_CODE env vars
 
-const https = require('https');
-const HUB = 'hub.stifer.xyz';
+const protocol = process.env.HUB_PROTOCOL || 'https';
+const httpModule = protocol === 'http' ? require('http') : require('https');
+const HUB = process.env.HUB_HOST || 'hub.stifer.xyz';
+const port = process.env.HUB_PORT ? parseInt(process.env.HUB_PORT, 10) : (protocol === 'http' ? 80 : 443);
 const API_KEY = process.env.HUB_API_KEY;
 const BUSINESS = process.env.HUB_BUSINESS_CODE || process.env.HUB_BUSINESS;
 if (!API_KEY || !BUSINESS) {
@@ -14,8 +16,8 @@ const WH = {'X-API-Key':API_KEY,'X-Business-Code':BUSINESS};
 
 function api(method, path, data, headers) {
   return new Promise((resolve) => {
-    const opts = {hostname:HUB,path,method,headers:{'Content-Type':'application/json',...headers}};
-    const req = https.request(opts, res => {let d='';res.on('data',c=>d+=c);res.on('end',()=>{try{resolve({code:res.statusCode,data:JSON.parse(d)})}catch(e){resolve({code:res.statusCode,data:d})}})});
+    const opts = {hostname:HUB,port,path,method,headers:{'Content-Type':'application/json',...headers}};
+    const req = httpModule.request(opts, res => {let d='';res.on('data',c=>d+=c);res.on('end',()=>{try{resolve({code:res.statusCode,data:JSON.parse(d)})}catch(e){resolve({code:res.statusCode,data:d})}})});
     if(data) req.write(JSON.stringify(data));
     req.end();
   });

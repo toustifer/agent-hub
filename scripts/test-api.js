@@ -1,4 +1,7 @@
-const https = require('https');
+const protocol = process.env.HUB_PROTOCOL || 'https';
+const httpModule = protocol === 'http' ? require('http') : require('https');
+const hostname = process.env.HUB_HOST || 'hub.stifer.xyz';
+const port = process.env.HUB_PORT ? parseInt(process.env.HUB_PORT, 10) : (protocol === 'http' ? 80 : 443);
 const API_KEY = process.env.HUB_API_KEY;
 const BUSINESS = process.env.HUB_BUSINESS_CODE || process.env.HUB_BUSINESS;
 if (!API_KEY || !BUSINESS) {
@@ -7,8 +10,8 @@ if (!API_KEY || !BUSINESS) {
 }
 function api(method, path, data, headers) {
   return new Promise((resolve) => {
-    const opts = {hostname:'hub.stifer.xyz',path,method,headers:{'Content-Type':'application/json','X-API-Key':API_KEY,'X-Business-Code':BUSINESS,...headers}};
-    const req = https.request(opts, res => {let d='';res.on('data',c=>d+=c);res.on('end',()=>{try{resolve({code:res.statusCode,data:JSON.parse(d)})}catch(e){resolve({code:res.statusCode,data:d})}})});
+    const opts = {hostname, port, path, method, headers:{'Content-Type':'application/json','X-API-Key':API_KEY,'X-Business-Code':BUSINESS,...headers}};
+    const req = httpModule.request(opts, res => {let d='';res.on('data',c=>d+=c);res.on('end',()=>{try{resolve({code:res.statusCode,data:JSON.parse(d)})}catch(e){resolve({code:res.statusCode,data:d})}})});
     if(data) req.write(JSON.stringify(data));
     req.end();
   });
