@@ -1,6 +1,9 @@
 package handler
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestRequirementTransitionMetadata(t *testing.T) {
 	tests := []struct {
@@ -89,4 +92,46 @@ func TestBuildUpdateRequirementSets(t *testing.T) {
 		}
 	})
 }
+
+func TestRequirementTasksDoneQueryStatusCompatibility(t *testing.T) {
+	queries := map[string]string{
+		"ListRequirements": listRequirementsBaseQuery,
+		"GetRequirement":   getRequirementQuery,
+	}
+
+	expectedStatuses := []string{"'completed'", "'done'", "'passed'"}
+
+	for name, q := range queries {
+		t.Run(name, func(t *testing.T) {
+			if strings.Contains(q, "d.status = 'completed'") {
+				t.Errorf("%s query still contains legacy hardcoded status = 'completed'", name)
+			}
+			if !strings.Contains(q, "d.status IN ('completed', 'done', 'passed')") {
+				t.Errorf("%s query does not match expected d.status IN clause", name)
+			}
+			for _, status := range expectedStatuses {
+				if !strings.Contains(q, status) {
+					t.Errorf("%s query missing status %s in tasks_done condition", name, status)
+				}
+			}
+		})
+	}
+}
+
+func TestIsTaskStatusDone(t *testing.T) {
+	doneStatuses := []string{"completed", "done", "passed"}
+	for _, st := range doneStatuses {
+		if !isTaskStatusDone(st) {
+			t.Errorf("expected isTaskStatusDone(%q) = true, got false", st)
+		}
+	}
+
+	notDoneStatuses := []string{"pending", "in_progress", "executing", "failed", "cancelled", "", "unknown"}
+	for _, st := range notDoneStatuses {
+		if isTaskStatusDone(st) {
+			t.Errorf("expected isTaskStatusDone(%q) = false, got true", st)
+		}
+	}
+}
+
 

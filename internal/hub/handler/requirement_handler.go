@@ -81,6 +81,40 @@ type requirementItem struct {
 	TaskIDs        []string   `json:"task_ids,omitempty"`
 }
 
+const (
+	listRequirementsBaseQuery = `SELECT r.id, r.title, r.description, r.status,
+		COALESCE(NULLIF(r.created_by_email,''),''),
+		r.submitted_at, r.accepted_at, r.created_at, r.updated_at,
+		(SELECT count(*) FROM hub.hub_requirement_links l WHERE l.business_id = r.business_id AND l.requirement_id = r.id) AS task_count,
+		(SELECT count(*) FROM hub.hub_requirement_links l
+			JOIN hub.hub_dag_state d ON d.business_id=l.business_id AND d.task_id=l.task_id
+			WHERE l.business_id = r.business_id AND l.requirement_id = r.id AND d.status IN ('completed', 'done', 'passed')) AS tasks_done
+		,	COALESCE((SELECT array_agg(l.task_id ORDER BY l.task_id) FROM hub.hub_requirement_links l WHERE l.business_id=r.business_id AND l.requirement_id=r.id), '{}') AS task_ids
+	 FROM hub.hub_requirements r
+	 WHERE r.business_id = $1`
+
+	getRequirementQuery = `SELECT r.id, r.title, r.description, r.status,
+			COALESCE(NULLIF(r.created_by_email,''),''),
+			r.submitted_at, r.accepted_at, r.created_at, r.updated_at,
+			(SELECT count(*) FROM hub.hub_requirement_links l WHERE l.business_id = r.business_id AND l.requirement_id = r.id) AS task_count,
+			(SELECT count(*) FROM hub.hub_requirement_links l
+				JOIN hub.hub_dag_state d ON d.business_id=l.business_id AND d.task_id=l.task_id
+				WHERE l.business_id = r.business_id AND l.requirement_id = r.id AND d.status IN ('completed', 'done', 'passed')) AS tasks_done
+			,COALESCE((SELECT array_agg(l.task_id ORDER BY l.task_id) FROM hub.hub_requirement_links l WHERE l.business_id=r.business_id AND l.requirement_id=r.id), '{}') AS task_ids
+		 FROM hub.hub_requirements r
+		 WHERE r.id = $1 AND r.business_id = $2`
+)
+
+// isTaskStatusDone 判断任务状态是否算作完成（与 tasks_done 统计条件一致）
+func isTaskStatusDone(status string) bool {
+	switch status {
+	case "completed", "done", "passed":
+		return true
+	default:
+		return false
+	}
+}
+
 func (h *Handler) ListRequirements(c *gin.Context) {
 	code := c.Param("code")
 	bizID, _, ok := h.RequireMembership(c, code)
@@ -89,16 +123,7 @@ func (h *Handler) ListRequirements(c *gin.Context) {
 	}
 	statusFilter := strings.TrimSpace(c.Query("status"))
 
-	query := `SELECT r.id, r.title, r.description, r.status,
-		COALESCE(NULLIF(r.created_by_email,''),''),
-		r.submitted_at, r.accepted_at, r.created_at, r.updated_at,
-		(SELECT count(*) FROM hub.hub_requirement_links l WHERE l.business_id = r.business_id AND l.requirement_id = r.id) AS task_count,
-		(SELECT count(*) FROM hub.hub_requirement_links l
-			JOIN hub.hub_dag_state d ON d.business_id=l.business_id AND d.task_id=l.task_id
-			WHERE l.business_id = r.business_id AND l.requirement_id = r.id AND d.status = 'completed') AS tasks_done
-		,	COALESCE((SELECT array_agg(l.task_id ORDER BY l.task_id) FROM hub.hub_requirement_links l WHERE l.business_id=r.business_id AND l.requirement_id=r.id), '{}') AS task_ids
-	 FROM hub.hub_requirements r
-	 WHERE r.business_id = $1`
+	query := listRequirementsBaseQuery
 	args := []interface{}{bizID}
 	if statusFilter != "" {
 		query += ` AND r.status = $2`
@@ -137,18 +162,7 @@ func (h *Handler) GetRequirement(c *gin.Context) {
 	}
 	id := c.Param("id")
 	var item requirementItem
-	err := h.Svc.Pool.QueryRow(c.Request.Context(),
-		`SELECT r.id, r.title, r.description, r.status,
-			COALESCE(NULLIF(r.created_by_email,''),''),
-			r.submitted_at, r.accepted_at, r.created_at, r.updated_at,
-			(SELECT count(*) FROM hub.hub_requirement_links l WHERE l.business_id = r.business_id AND l.requirement_id = r.id) AS task_count,
-			(SELECT count(*) FROM hub.hub_requirement_links l
-				JOIN hub.hub_dag_state d ON d.business_id=l.business_id AND d.task_id=l.task_id
-				WHERE l.business_id = r.business_id AND l.requirement_id = r.id AND d.status = 'completed') AS tasks_done
-			,COALESCE((SELECT array_agg(l.task_id ORDER BY l.task_id) FROM hub.hub_requirement_links l WHERE l.business_id=r.business_id AND l.requirement_id=r.id), '{}') AS task_ids
-		 FROM hub.hub_requirements r
-		 WHERE r.id = $1 AND r.business_id = $2`, id, bizID,
-	).Scan(&item.ID, &item.Title, &item.Description, &item.Status,
+	err := h.Svc.Pool.QueryRow(c.Request.Context(), getRequirementQuery, id, bizID).Scan(&item.ID, &item.Title, &item.Description, &item.Status,
 		&item.CreatedByEmail, &item.SubmittedAt, &item.AcceptedAt,
 		&item.CreatedAt, &item.UpdatedAt, &item.TaskCount, &item.TasksDone, &item.TaskIDs)
 	if err != nil {
