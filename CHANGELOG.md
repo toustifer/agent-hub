@@ -11,6 +11,14 @@ Format inspired by Keep a Changelog. Versioning: [SemVer](https://semver.org/).
 - `/version` and version fields on `/health`
 - Docs: `docs/RELEASE.md`
 
+## [0.2.4] - 2026-10-02
+
+### Fixed
+- Align Kanban board task columns in KanbanBoard.vue with native gentflow states (ssigned -> pending, xecuting/ework_needed -> in_progress, eview_pending -> in_review, done/passed -> completed).
+- Display status tag badge directly on kanban cards for improved visual feedback.
+- Update 	askStatusType in TeamPage.vue to map all gentflow task states to appropriate tag types (done -> success, xecuting -> warning, ework_needed -> danger, eview_pending -> primary).
+- Update 	asks_done subquery in equirement_handler.go (ListRequirements & GetRequirement) from hardcoded d.status = 'completed' to d.status IN ('completed', 'done', 'passed'), resolving 0-completion count issue for agentflow tasks.
+
 ## [0.2.3] - 2026-09-18
 
 ### Security
@@ -47,7 +55,8 @@ Format inspired by Keep a Changelog. Versioning: [SemVer](https://semver.org/).
 - Official docs tab (Hub MCP + agentflow setup)
 - Soft-sync export tool `hub_export_soft_sync_config`
 
-[Unreleased]: https://github.com/toustifer/agent-hub/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/toustifer/agent-hub/compare/v0.2.4...HEAD
+[0.2.4]: https://github.com/toustifer/agent-hub/releases/tag/v0.2.4
 [0.2.3]: https://github.com/toustifer/agent-hub/releases/tag/v0.2.3
 [0.2.2]: https://github.com/toustifer/agent-hub/releases/tag/v0.2.2
 [0.2.0]: https://github.com/toustifer/agent-hub/releases/tag/v0.2.0
