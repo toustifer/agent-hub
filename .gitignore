@@ -51,3 +51,14 @@ data/
 hub-server
 hub-server-linux
 cmd/hub/hub
+
+# Temporary or local doc staging
+static/assets/
+static/index.html
+static/*.html
+static/*.png
+static/AGENTFLOW_ALIGNMENT.md
+static/MCP_OFFICIAL.md
+static/agentflow-alignment.md
+static/llms.txt
+static/sync-contract.md
