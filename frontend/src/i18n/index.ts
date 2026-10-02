@@ -63,30 +63,6 @@ const msgs: Record<string, Record<string, string>> = {
   'docs.afStep4': { zh: '4. 验证', en: '4. Verify' },
   'docs.afStep4body': { zh: '验收：/mcp 已连、/agentflow on 可用；若 soft-sync 则 create→start 后 Hub 见邮箱', en: 'Verify: /mcp connected, /agentflow on works; with soft-sync, create→start shows email on Hub' },
 
-
-  'mcp.title': { zh: 'MCP 配置', en: 'MCP Setup' },
-  'mcp.subtitle': { zh: 'Claude / Codex / Cursor 直连远程 MCP：https://hub.stifer.xyz/mcp（OAuth 或 JWT）。无需本机 Node 桥。', en: 'Claude / Codex / Cursor connect remote MCP: https://hub.stifer.xyz/mcp (OAuth or JWT). No local Node bridge.' },
-  'mcp.aiDoc': { zh: '给 AI 阅读的完整教程', en: 'Full guide for AI agents' },
-  'mcp.aiDocHint': { zh: '把这个链接丢给 AI，即可按步骤自配远程 MCP', en: 'Paste this URL into an AI chat so it can configure remote MCP itself' },
-  'mcp.openAiDoc': { zh: '打开 mcp.md', en: 'Open mcp.md' },
-  'mcp.copyUrl': { zh: '复制', en: 'Copy' },
-  'mcp.copied': { zh: '已复制', en: 'Copied' },
-  'mcp.step1': { zh: '1. 写入项目 .mcp.json（远程）', en: '1. Write project .mcp.json (remote)' },
-  'mcp.step1hint': { zh: '官方主路径：type=http，无需克隆 mcp-server', en: 'Primary path: type=http — no mcp-server clone' },
-  'mcp.step2': { zh: '2. MCP 端点', en: '2. MCP endpoint' },
-  'mcp.step2hint': { zh: 'Streamable HTTP 由 Go Hub 进程内提供（不再反代 :9001）', en: 'Streamable HTTP is served in-process by Go Hub (no :9001 proxy)' },
-  'mcp.step3': { zh: '3. 登录 / OAuth', en: '3. Login / OAuth' },
-  'mcp.step3body': { zh: '重启 Claude Code → /mcp 见 hub 连到 https://hub.stifer.xyz/mcp → 完成 OAuth 或 hub_login() → hub_list_my_businesses', en: 'Restart Claude Code → /mcp shows hub at https://hub.stifer.xyz/mcp → finish OAuth or hub_login() → hub_list_my_businesses' },
-  'mcp.step4': { zh: '4. 团队 code', en: '4. Team code' },
-  'mcp.step4body': { zh: 'Dashboard 建团后复制标识码，或从 hub_list_my_businesses 读取。', en: 'Copy the team code from Dashboard, or from hub_list_my_businesses.' },
-  'mcp.authTitle': { zh: '工具鉴权', en: 'Tool auth' },
-  'mcp.authHuman': { zh: '人侧：OAuth/JWT — invite / branches / dag / list_*', en: 'Human: OAuth/JWT — invite / branches / dag / list_*' },
-  'mcp.authMachine': { zh: '机器：heartbeat / locks / events → 可选 API Key 头', en: 'Machine: heartbeat / locks / events → optional API key headers' },
-  'mcp.humanSetup': { zh: '人读安装页', en: 'Human setup page' },
-  'mcp.legacyTitle': { zh: '高级：本机 stdio 桥（legacy）', en: 'Advanced: local stdio bridge (legacy)' },
-  'mcp.legacyHint': { zh: '仅兼容旧环境。新用户请用远程 URL。', en: 'Compatibility only. Prefer remote URL for new setups.' },
-
-
   // Login
   'login.title': { zh: '登录 Agent Hub', en: 'Sign in to Agent Hub' },
   'login.email': { zh: '邮箱', en: 'Email' },
