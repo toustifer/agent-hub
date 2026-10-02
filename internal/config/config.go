@@ -31,6 +31,20 @@ func Load() (*Config, error) {
 	viper.SetConfigFile(".env")
 	viper.AutomaticEnv()
 
+	// 注册默认键，确保纯环境变量模式（无 .env 文件）下 viper.Unmarshal 能够读取环境变量
+	viper.SetDefault("HUB_PORT", "9000")
+	viper.SetDefault("HUB_HOST", "")
+	viper.SetDefault("HUB_ENV", "dev")
+	viper.SetDefault("HUB_DATABASE_URL", "")
+	viper.SetDefault("HUB_REDIS_URL", "")
+	viper.SetDefault("HUB_JWT_SECRET", "")
+	viper.SetDefault("HUB_LOG_LEVEL", "info")
+	viper.SetDefault("HUB_LOG_PATH", "")
+	viper.SetDefault("HUB_LOCK_DEFAULT_TTL_SECONDS", 300)
+	viper.SetDefault("HUB_LOCK_CLEANUP_INTERVAL_SECONDS", 60)
+	viper.SetDefault("HUB_LOCK_MAX_TTL_SECONDS", 3600)
+	viper.SetDefault("HUB_CORS_ORIGINS", "*")
+
 	if err := viper.ReadInConfig(); err != nil {
 		// .env 不存在也行，靠环境变量
 		_ = err

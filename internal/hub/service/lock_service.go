@@ -58,7 +58,7 @@ func (s *Service) AcquireLock(ctx context.Context, businessCode, resourceKey, wo
 	}
 
 	var expiresAt time.Time
-		insertSQL := "INSERT INTO hub.hub_locks (business_id, resource_key, holder_token, holder_worker_id, acquired_at, expires_at, heartbeat_at) VALUES ($1, $2, $3, $4, now(), now() + make_interval(secs => $5), now()) ON CONFLICT (resource_key) WHERE released_at IS NULL AND expires_at > now() DO NOTHING RETURNING expires_at"
+		insertSQL := "INSERT INTO hub.hub_locks (business_id, resource_key, holder_token, holder_worker_id, acquired_at, expires_at, heartbeat_at) VALUES ($1, $2, $3, $4, now(), now() + make_interval(secs => $5), now()) ON CONFLICT (resource_key) WHERE released_at IS NULL DO NOTHING RETURNING expires_at"
 	err = s.Pool.QueryRow(ctx, insertSQL, biz.ID, resourceKey, token, workerID, ttlSeconds).Scan(&expiresAt)
 
 	if errors.Is(err, pgx.ErrNoRows) {
