@@ -11,6 +11,20 @@ Format inspired by Keep a Changelog. Versioning: [SemVer](https://semver.org/).
 - `/version` and version fields on `/health`
 - Docs: `docs/RELEASE.md`
 
+## [0.2.5] - 2026-10-02
+
+### Removed
+- Delete legacy root migrations/ directory; migrations are exclusively sourced from internal/hub/repository/migrations/*.sql via embed.
+- Remove obsolete and unrouted McpSetup.vue view (superseded by OfficialDocs.vue).
+- Remove unused Pinia pp.ts store.
+- Remove unreferenced mcp.* translation strings from rontend/src/i18n/index.ts.
+- Remove unreferenced private deidentify function in community_service.go.
+- Remove empty placeholder if block in doc_handler.go.
+- Delete one-off maintenance scripts in scripts/ and ignore temporary static documentation build artifacts in .gitignore.
+
+### Refactored
+- Deduplicate team path helper in usiness_handler.go by directly calling service.BuildTeamPath.
+
 ## [0.2.4] - 2026-10-02
 
 ### Fixed
@@ -55,7 +69,8 @@ Format inspired by Keep a Changelog. Versioning: [SemVer](https://semver.org/).
 - Official docs tab (Hub MCP + agentflow setup)
 - Soft-sync export tool `hub_export_soft_sync_config`
 
-[Unreleased]: https://github.com/toustifer/agent-hub/compare/v0.2.4...HEAD
+[Unreleased]: https://github.com/toustifer/agent-hub/compare/v0.2.5...HEAD
+[0.2.5]: https://github.com/toustifer/agent-hub/releases/tag/v0.2.5
 [0.2.4]: https://github.com/toustifer/agent-hub/releases/tag/v0.2.4
 [0.2.3]: https://github.com/toustifer/agent-hub/releases/tag/v0.2.3
 [0.2.2]: https://github.com/toustifer/agent-hub/releases/tag/v0.2.2
