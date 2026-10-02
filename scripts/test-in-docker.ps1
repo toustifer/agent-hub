@@ -156,8 +156,11 @@ ON CONFLICT DO NOTHING;
     $env:HUB_BUSINESS_CODE = "test"
     $env:HUB_API_KEY = "test-api-key-for-docker-sandbox-32ch"
 
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     $testOutput = node scripts/test-api.js 2>&1
     $testExitCode = $LASTEXITCODE
+    $ErrorActionPreference = $prevEap
 
     Write-Host ($testOutput -join "`n")
 
